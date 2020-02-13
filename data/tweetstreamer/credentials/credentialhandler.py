@@ -1,18 +1,19 @@
 import getpass 
+import tweepy
 from cryptography.fernet import Fernet
 
 
-class CredentialHandler():
+class CredentialHandler:
     """
     Class for handling Twitter keys securely.
     Asks user for a password and decrypts credentials file.
+    returns twitter api authentication
     """
-    def __init__(self, credentialfile):
+    def __init__(self, credentialsfile):
         """
         iostream: input / output stream created by ioHandler
         """
-        self.credentialfile = credentialfile
-        self.__credentials = {}
+        self.credentialsfile = credentialsfile
         self.__set_credentials()
     def __set_credentials(self):
         """
@@ -32,7 +33,7 @@ class CredentialHandler():
         exit
     def __decrypt(self, key):
         """
-        Read and decrypt password file
+        Read and decrypt password file, authenticate tweepy api
 
         decrypted format:
 
@@ -42,12 +43,17 @@ class CredentialHandler():
         access_secret foostring
         """
         crypto = Fernet(key) # cryptography object
-        f = open(self.credentialfile, mode= "rb")
+        f = open(self.credentialsfile, mode= "rb")
         token = f.read()
         f.close()
         decrypted = crypto.decrypt(token).decode().split()
+        credentials = {}
         for i in range(4):
-            self.__credentials[decrypted[2*i]] = decrypted[2*i+1]
+            credentials[decrypted[2*i]] = decrypted[2*i+1]
+        auth = tweepy.OAuthHandler(credentials['consumer_key'], credentials['consumer_secret'])
+        auth.set_access_token(credentials['access_token'], credentials['access_token_secret'])
+        self.api = tweepy.API(auth)
             
-    def get_credentials(self):
-        return self.__credentials.copy()
+    def get_auth(self):
+        return self.api.auth
+        
