@@ -35,10 +35,13 @@ With environment files, conda can create identical environments for different ma
 4. Open the terminal in the project folder and run the command: `conda env create -f filename.yml`. Conda installs all the libraries specified in the `.yml` file and compatible versions of these in a new stand-alone python environment, name of which is defined in the first row of the `filename.yml` file.
 
 5. Now you can open up the Jupyter Notebook (or Jupyter Lab) with the command `jupyter notebook` (or` jupyter lab`), and you can choose from the 'Kernel -> Change Kernel ...' menu to activate your newly installed conda environment (or any other environment you want).
-  **Note!** If for some reason the environment does not appear in the `Change Kernel` menu, you can do the following:
-  * Close the jupyter with the `Ctrl + C` combination on the Notebook and respond with` y` for confirmation. Then run the following command:
-  * `ipython kernel install --user --name = <environmentname>`
-  * now you can reboot your jupyter notebook with `jupyter notebook` or Lab`` jupyter lab`.
+  **Note!** If for some reason the environment does not appear in the `Change Kernel` menu, you might not have the proper configuration set up for handling kernels (=conda environments). You can do the following steps (assuming your conda environment is named `aalto-sci-project`):
+  * Close the jupyter (in Linux with the `Ctrl + C` combination on the Notebook and respond with` y` for confirmation.) Then run the following commands:
+  * `conda activate aalto-sci-project`
+  * `conda install ipykernel`
+  * `ipython kernel install --user --name=aalto-sci-project`
+  * `conda deactivate`    
+  * now you can reboot your jupyter notebook (in Linux terminal with `jupyter notebook` or Lab`` jupyter lab`).
 
 If you want to use the environments outside the jupyter, you can also activate / deactivate them directly in the terminal:
 * `conda info --envs` command lists all installed environments
