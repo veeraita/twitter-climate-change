@@ -4,4 +4,4 @@ This folder includes code / jupyter notebooks for content-based analysis of the 
 * Training on real data, test and validation
 
 Group members: 
-* Veera
+* Veera, Annika, Inka, Maria
