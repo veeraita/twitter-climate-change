@@ -13,8 +13,10 @@ class Settings():
         f = open(stsfile, "r")
         rawsts = {}
         for line in f.readlines():
-            s = line.rstrip().split()
-            rawsts[s[0]] = s[1]
+            if len(line)>2:
+                s = line.rstrip().split()
+                print(line)
+                rawsts[s[0]] = s[-1]
         f.close()
         self.credentialsfile = rawsts['credentialsfile']
         self.keywordfile = rawsts['keywordfile']

@@ -1,8 +1,11 @@
 import sys
 import tweepy
-from .credentials import CredentialHandler
-from .settings import Settings
-from .streaming import Streamer
+
+
+from packages.credentials import CredentialHandler
+from packages.settings import Settings
+from packages.streaming import Streamer
+
 def main(args = None):
     """
     tweetstreamer
@@ -20,7 +23,8 @@ def main(args = None):
     streamer = Streamer(sts.json_dump, sts.csv_out)
     # start streaming
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
-    stream.filter(track = sts.get_keywords(), locations=sts.location)
+    #stream.filter(track = sts.get_keywords(), locations=sts.location)
+    stream.sample()# Test maximum rates
 
 # run application
 if __name__ == "__main__":

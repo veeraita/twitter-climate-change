@@ -16,7 +16,7 @@ class Streamer(tweepy.StreamListener):
         """
         Dumps everything to a file in json format
         """
-        with open(self.json_dump, "ab") as f:
+        with open(self.json_dump, "a") as f:
             f.write(data)
     def on_status(self, status):
         print(status.id_str)
@@ -59,18 +59,19 @@ class Streamer(tweepy.StreamListener):
 
         if disconnection is due to exceeded rate limit, 
         reset shoulf be waited for or the app might get blacklisted
+        (API should take care of this)
 
         http://docs.tweepy.org/en/latest/streaming_how_to.html
         """
         print("Encountered streaming error (", status_code, ")")
         print(self.reconnection_attempts," reconnection attempts.")
+
         if status_code in [420,429]: # rate limit exceeded
             # wait until rate limit is reset
-
-+
-
+            # NOTE API (created by credentialhandler) should take care of rate limits automatically
+            time.sleep(15*60)
         elif self.reconnection_attempts < self.reconnections_limit:
-            
+            # if there is some other error (internet connectione etc)
             wait_time = 2**self.reconnection_attempts
             print("Waiting ",wait_time, "s and reconnecting.")
             time.sleep(wait_time)
@@ -78,7 +79,5 @@ class Streamer(tweepy.StreamListener):
         else:
             print("Reconnection attempts limit exceeded.")
             print("Terminating.")
-            exit
-
-        sys.exit()
+            exit()
 

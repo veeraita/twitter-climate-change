@@ -30,7 +30,7 @@ class CredentialHandler:
             else: 
                 print('Valid password.') 
                 return
-        exit
+        quit()
     def __decrypt(self, key):
         """
         Read and decrypt password file, authenticate tweepy api
@@ -52,7 +52,8 @@ class CredentialHandler:
             credentials[decrypted[2*i]] = decrypted[2*i+1]
         auth = tweepy.OAuthHandler(credentials['consumer_key'], credentials['consumer_secret'])
         auth.set_access_token(credentials['access_token'], credentials['access_token_secret'])
-        self.api = tweepy.API(auth)
+        # set api to wait and reconnect automatically in case of rate limit error
+        self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
             
     def get_auth(self):
         return self.api.auth
