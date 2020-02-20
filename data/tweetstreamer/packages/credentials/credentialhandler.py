@@ -24,6 +24,7 @@ class CredentialHandler:
         for _ in range(3):
             try: 
                 key = getpass.getpass(prompt = ">>").encode()
+                print(key)
                 self.__decrypt(key)
             except Exception as error: 
                 print('Invalid key. Please try again.', error) 

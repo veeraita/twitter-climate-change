@@ -1,6 +1,6 @@
 import sys
 import tweepy
-
+import time
 
 from packages.credentials import CredentialHandler
 from packages.settings import Settings
@@ -23,8 +23,16 @@ def main(args = None):
     streamer = Streamer(sts.json_dump, sts.csv_out)
     # start streaming
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
-    #stream.filter(track = sts.get_keywords(), locations=sts.location)
-    stream.sample()# Test maximum rates
+    
+    while True:
+        try:
+            stream.filter(track = sts.get_keywords(), locations=sts.location)
+            #stream.sample()# Test maximum rates
+        except Exception as ex:
+            print(ex)
+            waittime = 5
+            print("Returning to stream after ",waittime, " seconds")
+            time.sleep(waittime)
 
 # run application
 if __name__ == "__main__":

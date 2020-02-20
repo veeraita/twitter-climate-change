@@ -15,7 +15,6 @@ class Settings():
         for line in f.readlines():
             if len(line)>2:
                 s = line.rstrip().split()
-                print(line)
                 rawsts[s[0]] = s[-1]
         f.close()
         self.credentialsfile = rawsts['credentialsfile']

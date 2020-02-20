@@ -18,6 +18,7 @@ class Streamer(tweepy.StreamListener):
         """
         with open(self.json_dump, "a") as f:
             f.write(data)
+            return
     def on_status(self, status):
         print(status.id_str)
         # if "retweeted_status" attribute exists, flag this tweet as a retweet.
@@ -47,7 +48,7 @@ class Streamer(tweepy.StreamListener):
 
         with open(self.csv_out, "a", encoding='utf-8') as f:
             f.write("%s,%s,%s,%s,%s,%s\n" % (status.created_at,status.user.screen_name,is_retweet,is_quote,text,quoted_text))
-
+            return
     def on_error(self, status_code):
         """
         twitter recommends immediate reconnection attempt with exponential wait pattern>
