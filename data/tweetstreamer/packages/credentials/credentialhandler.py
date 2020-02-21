@@ -1,4 +1,6 @@
 import getpass 
+import sys
+import os
 import tweepy
 from cryptography.fernet import Fernet
 
@@ -9,6 +11,7 @@ class CredentialHandler:
     Asks user for a password and decrypts credentials file.
     returns twitter api authentication
     """
+    # TODO checkout https://stackoverflow.com/questions/42568262/how-to-encrypt-text-with-a-password-in-python
     def __init__(self, credentialsfile):
         """
         iostream: input / output stream created by ioHandler
@@ -23,7 +26,11 @@ class CredentialHandler:
         print("You have tree attempts, after which the program terminates")
         for _ in range(3):
             try: 
-                key = getpass.getpass(prompt = ">>").encode()
+                sys.stdout = open(os.devnull, "w") # switch off console output to suppress echo
+                sys.stderr= open(os.devnull, "w")
+                key = input(">>").encode()
+                sys.stdout = sys.__stdout__ # restore echo
+                sys.stderr = sys.__stderr__
                 print(key)
                 self.__decrypt(key)
             except Exception as error: 

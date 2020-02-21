@@ -20,13 +20,14 @@ def main(args = None):
     # decrypt twitter credentials
     ch = CredentialHandler(sts.credentialsfile)
     # create streamlistener
-    streamer = Streamer(sts.json_dump, sts.csv_out)
+    streamer = Streamer(sts.json_dump)
     # start streaming
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
     
     while True:
         try:
             stream.filter(track = sts.get_keywords(), locations=sts.location)
+            print("looping too much?")
             #stream.sample()# Test maximum rates
         except Exception as ex:
             print(ex)
