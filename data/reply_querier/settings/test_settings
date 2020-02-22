@@ -1,0 +1,5 @@
+CREDENTIALS_PATH encr_credentials.bin  
+TIME_TRESHOLD 1
+JSON_READ_PATH test_read.json
+JSON_WRITE_PATH test_saved_replies.json
+QUERIED_SET_PATH queried_set.txt
