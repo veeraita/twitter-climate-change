@@ -3,75 +3,93 @@ import tweepy
 import time
 import logging
 import asyncio
+import argparse
 
 from datetime import datetime as dt
 from packages.credentials import CredentialHandler
 from packages.settings import Settings
 from packages.reply_querier import ReplyQuerier,Io
 
-def main(args = None):
+def log_stats(start_time, MAX_C_TIMEOUTS, io, rquerier, n_timeouts):
+    run_time = time.time()-start_time
+    time_st  = time.strftime('%H hours %M minutes %S secs', time.gmtime(run_time))
 
-    N_SAVE_BATCH  = 10
-    WAIT_TIME     = 5
-    MAX_WAIT_TIME = 3600
+    logging.info(':: ReplyQuerier SHUTDOWN INITIATED: Limit ({0}) of consequtive reconnection attempts reached.'.format(MAX_C_TIMEOUTS))
+    logging.info(':: STATS: execution time {0:.0f} days, {1}'.format(run_time // (24*3600), time_st))
+    logging.info('\tTweets processed {0}, replies found {1}'.format(io.process_count, rquerier.c_reply))
+    logging.info('\tTotal number of reconnection timeouts: {0}'.format(n_timeouts))
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+async def main(args = None):
+
+    N_SAVE_BATCH   = 10 # Default batch of processed tweets before save
+    BASE_WAIT_TIME = 3
+    MAX_WAIT_TIME  = 3600
+    MAX_C_TIMEOUTS = 2
+    
+    debug_mode = False
+    
+    # stats
+    start_time = time.time()
+    # keep track of timeouts
+    conseq_timeouts, n_timeouts = 0,0 
 
     """
     tweetReplyQuerier
 
     Application for querying and storing Reply data for set of tweets.
     """
-    logging.info("AALTO LST tweetReplyQuerier\n")
+    logging.info("AALTO LST Tweet ReplyQuerier\n\t")
     
-    # local key import without encryption for conveniency, 
-    # If you use this, remember to keep the credentials file in .gitignore
-    keyfile = None
-    if args is None:
-        args = sys.argv[1] #settings file path
-        if len(sys.argv) > 2:
-            keyfile = sys.argv[2] #keyfile path
+    # define parameters
+    parser = argparse.ArgumentParser()
+    parser.add_argument('settings_path', help="Setting path")
+    parser.add_argument('-d', '--debug', action='store_true', help="uses debug mode")
+    parser.add_argument('-k', '--keyfile', help="uses convenience method with separate Twitter credentials keyfile")
     
-    # read settings file
-    sts = Settings(args)
+    args       = parser.parse_args()
+    debug_mode = args.debug
+    keyfile    = args.keyfile 
+    logger     = logging.getLogger()
+    logger.setLevel(logging.DEBUG) if debug_mode else logger.setLevel(logging.INFO) 
 
-    # decrypt and authenticate 
+    # 1. read settings file
+    sts = Settings(args.settings_path)
+
+    # 2. decrypt and authenticate 
     cred_handler = CredentialHandler(sts.credentialsfile, keyfile)
     logging.info("Initialized successfully.\nStarting operation...")
 
-    connection_timeouts = 0
+    # instantiate Io module
+    io = Io(sts.json_read_path, sts.json_write_path, sts.queried)
+    
+    
     while True:
-        # instantiate Io module
-        io = Io(sts.json_read_path, sts.json_write_path, sts.queried)
-
         # instantiate replyquerier
         rquerier = ReplyQuerier(io, cred_handler, sts) 
         
-        # instantiate list for replies
-        replies = []
-
-
-        # block until complete
+        # block until complete, use flag to reset the number of 
+        # conseq_timeouts variable in cases of consequtive timeout
         query_flag = False
-
-        # call is async as it uses generators + recursion
-        await rquerier.get_all_replies(replies, N_SAVE_BATCH, query_flag)
-
-        if query_flag: connection_timeouts = 0
-
+        replies = await rquerier.fetch_replies(N_SAVE_BATCH, query_flag)
         logging.info("All tweets in {0} processed.".format(sts.json_read_path)) 
-        if len(replies) != 0:
+        
+        if query_flag: conseq_timeouts = 0
+        if len(replies) > 0:
             io.save(replies)
         
-        # set exp increasing waiting time
-        iter_wait_time = WAIT_TIME**connection_timeouts
-        logging.info("Sleeping {0} s and retrying.".format(iter_wait_time))
+        if conseq_timeouts == MAX_C_TIMEOUTS:
+            log_stats(start_time, MAX_C_TIMEOUTS, io, rquerier, n_timeouts)        
+            break
         
-        time.sleep(min(MAX_WAIT_TIME, iter_wait_time))
-        connection_timeouts += 1
-        
+        conseq_timeouts += 1
+        n_timeouts += 1
 
+        # set exp increasing waiting time
+        iter_wait_time = BASE_WAIT_TIME**conseq_timeouts
+        logging.info("Sleeping {0} s and retrying.".format(iter_wait_time))
+        time.sleep(min(MAX_WAIT_TIME, iter_wait_time))
+        
 # run application
 if __name__ == "__main__":
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

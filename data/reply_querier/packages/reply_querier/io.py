@@ -21,22 +21,21 @@ class Io:
         Path to the json-data file for saving the downloaded replies.
     queried_path : str
         Path to the file containing the list of already queried tweet ids.
-    n_tweet : int
-        Parameter to define number of tweets in each block. 
-
+    
     """
     
-    def __init__(self, json_read_file, json_write_file, queried_path, n_tweet = 20):
+    def __init__(self, json_read_file, json_write_file, queried_path):
         """
         Initialize the object.
         """
-        self.N_PROCESS_BATCH = 5
+        self.__QUERIED_SIZE  = 5
+        self.__BLOCK_SIZE    = 20
 
-        self.n_tweet         = n_tweet
         self.json_read_file  = open(json_read_file, 'r')
         self.json_write_file = open(json_write_file, 'a')
+        self.queried_path    = queried_path 
         self.process_count   = 0
-        self.queried_path = queried_path 
+        self.__query_count   = 0
 
         # If file doesn't exist, create new file to the same path
         if not os.path.exists(queried_path):
@@ -55,14 +54,14 @@ class Io:
                 self.json_write_file.write(data)
                 logging.info("Saved tweets successfully.")
             return True
-            
+
         except Exception as ex:
             logging.error("Save was unsuccessful:", ex)
             return False
 
     def __read_next_block(self):
         """
-        Read a batch of n_tweets in generator mode from the file.
+        Read a batch of BLOCK_SIZE in generator mode from the file.
         Should be able to process large files in memory efficient way.
         
         return: (list) list of tweets
@@ -72,12 +71,15 @@ class Io:
         for line in self.json_read_file:
             block.append(line)
             i += 1
-            if i % self.n_tweet == 0:
+            if i % self.__BLOCK_SIZE == 0:
                 yield block
+                self.process_count += self.__BLOCK_SIZE
+                i = 0
                 block = []
 
         if block:
             yield block
+            self.process_count += i
 
     def __load_queried_set(self, path):
         try:
@@ -105,13 +107,13 @@ class Io:
 
     def add_queried(self, tweet_id):
         """Add tweet to queried set, store only periodically to save time on slow IO requests."""    
-        self.process_count += 1
+        self.__query_count += 1
         self.queried.append(tweet_id)
         
-        if self.process_count == self.N_PROCESS_BATCH:
+        if self.__query_count == self.__QUERIED_SIZE:
             logging.info("Saving the queried set.") 
             self.__save_queried_set()
-            self.process_count = 0
+            self.__query_count = 0
 
     def get_queried(self):
         return self.queried

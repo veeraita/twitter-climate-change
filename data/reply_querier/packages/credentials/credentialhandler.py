@@ -45,11 +45,10 @@ class CredentialHandler:
         
     def __read_keyfile(self, keys):
         credentials = {}
-        keys_dec = [key.decode('utf-8') for key in keys]
+        keys_dec    = [key.decode('utf-8') for key in keys]
         credentials['consumer_key'], credentials['consumer_secret'] = keys_dec[0], keys_dec[1]
         credentials['access_token'], credentials['access_token_secret'] = keys_dec[2], keys_dec[3]
         
-        print(credentials)
         return credentials
 
     def __decrypt(self, key):
