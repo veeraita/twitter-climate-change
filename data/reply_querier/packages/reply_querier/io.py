@@ -28,14 +28,15 @@ class Io:
         """
         Initialize the object.
         """
-        self.__QUERIED_SIZE  = 5
-        self.__BLOCK_SIZE    = 20
+        self.__QUERIED_SIZE  = 5 # interval of save
+        self.__BLOCK_SIZE    = 5 # the number of tweets read into memory at once
 
         self.json_read_file  = open(json_read_file, 'r')
         self.json_write_file = open(json_write_file, 'a')
         self.queried_path    = queried_path 
         self.process_count   = 0
         self.__query_count   = 0
+        self.c_saved         = 0
 
         # If file doesn't exist, create new file to the same path
         if not os.path.exists(queried_path):
@@ -51,8 +52,9 @@ class Io:
         try:
             data = "".join([str(tweet) + "\n" for tweet in tweets])
             if len(data) > 1:
+                self.c_saved += len(tweets)
                 self.json_write_file.write(data)
-                logging.info("Saved tweets successfully.")
+                logging.info("Saved batch of {0} tweets successfully, in total {1}".format(len(tweets), self.c_saved))
             return True
 
         except Exception as ex:

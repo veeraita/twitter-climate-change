@@ -2,7 +2,6 @@ import sys
 import tweepy
 import time
 import logging
-import asyncio
 import argparse
 
 from datetime import datetime as dt
@@ -16,18 +15,18 @@ def log_stats(start_time, MAX_C_TIMEOUTS, io, rquerier, n_timeouts):
 
     logging.info(':: ReplyQuerier SHUTDOWN INITIATED: Limit ({0}) of consequtive reconnection attempts reached.'.format(MAX_C_TIMEOUTS))
     logging.info(':: STATS: execution time {0:.0f} days, {1}'.format(run_time // (24*3600), time_st))
-    logging.info('\tTweets processed {0}, replies found {1}'.format(io.process_count, rquerier.c_reply))
+    logging.info('\tTweets processed {0}, replies saved {1}'.format(io.process_count, io.c_saved))
     logging.info('\tTotal number of reconnection timeouts: {0}'.format(n_timeouts))
 
-async def main(args = None):
+def main(args = None):
 
-    N_SAVE_BATCH   = 10 # Default batch of processed tweets before save
-    BASE_WAIT_TIME = 3
-    MAX_WAIT_TIME  = 3600
-    MAX_C_TIMEOUTS = 2
+    N_SAVE_BATCH   = 1    # period for how often replies are saved
+    BASE_WAIT_TIME = 2    # high level wait time while reconnecting
+    MAX_WAIT_TIME  = 3600 # max wait time
+    MAX_C_TIMEOUTS = 9    # max number of timeouts
     
     debug_mode = False
-    
+
     # stats
     start_time = time.time()
     # keep track of timeouts
@@ -46,6 +45,7 @@ async def main(args = None):
     parser.add_argument('-d', '--debug', action='store_true', help="uses debug mode")
     parser.add_argument('-k', '--keyfile', help="uses convenience method with separate Twitter credentials keyfile")
     
+    # parse parameters
     args       = parser.parse_args()
     debug_mode = args.debug
     keyfile    = args.keyfile 
@@ -61,8 +61,7 @@ async def main(args = None):
 
     # instantiate Io module
     io = Io(sts.json_read_path, sts.json_write_path, sts.queried)
-    
-    
+
     while True:
         # instantiate replyquerier
         rquerier = ReplyQuerier(io, cred_handler, sts) 
@@ -70,7 +69,7 @@ async def main(args = None):
         # block until complete, use flag to reset the number of 
         # conseq_timeouts variable in cases of consequtive timeout
         query_flag = False
-        replies = await rquerier.fetch_replies(N_SAVE_BATCH, query_flag)
+        replies = rquerier.fetch_replies(N_SAVE_BATCH, query_flag)
         logging.info("All tweets in {0} processed.".format(sts.json_read_path)) 
         
         if query_flag: conseq_timeouts = 0
@@ -82,7 +81,7 @@ async def main(args = None):
             break
         
         conseq_timeouts += 1
-        n_timeouts += 1
+        n_timeouts      += 1
 
         # set exp increasing waiting time
         iter_wait_time = BASE_WAIT_TIME**conseq_timeouts
@@ -91,5 +90,5 @@ async def main(args = None):
         
 # run application
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    main() # TODO: try speeding up the queries 
+           # by using multiple async call instances with a shared io module 

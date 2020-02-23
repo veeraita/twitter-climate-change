@@ -3,11 +3,25 @@ import sys
 import json
 import time
 import logging
-import asyncio
 from datetime import datetime as dt
 
 class ReplyQuerier(tweepy.API):
+    """
+    ReplyQuerier class for querying the search API. Dependent on tweepy,
+    outputs list of tweets.
 
+    ...
+
+    Attributes
+    ----------
+    io : Io
+        Io module for I/O tasks.
+    cred_handler : CredentialsHandler
+        CredentialsHandler for authentication and api duties. 
+    reconn_limit : int
+        Set the limit for reconnections.
+    
+    """
     def __init__(self, io, cred_handler, sts, reconn_limit = 9):
         """
         define output files here
@@ -17,15 +31,14 @@ class ReplyQuerier(tweepy.API):
         self.cred_handler    = cred_handler
         self.reconn_limit    = reconn_limit
         self.reconn_attempts = 0 # count reconnection attempts
-        self.c_reply         = 0
         super(ReplyQuerier,self).__init__()
     
     def tweet_url(self, tweet):
-        return "https://twitter.com/{0}/status/{1}".format(tweet['user']['screen_name'], tweet['id'])
+        return "https://twitter.com/{0}/status/{1}".format(tweet['user']['screen_name'], tweet['id_str'])
 
-    def get_replies_to_tweet(self, origin_tweet):
+    def get_replies_to_tweet(self, origin_tweet, replies):
         """Get replies to a given tweet. Recursive function."""
-
+        
         WAIT_PERIOD = 60
         TWEET_COUNT = 100
 
@@ -35,18 +48,18 @@ class ReplyQuerier(tweepy.API):
 
         username = origin_tweet['user']['screen_name']
         origin_tweet_id = origin_tweet['id_str']
-
-        logging.info("Looking for replies to: {0}s".format(self.tweet_url(origin_tweet)))
         max_id = None
 
+        logging.info("Looking for replies to: {0}".format(self.tweet_url(origin_tweet)))
+
         while True:
-            query = "to:{0}".format(username)
-            
             # Query tweets that are directed to the user of the origin tweet 
             try:
-                tweets = self.cred_handler.api.search(q=query, since_id=origin_tweet_id,
-                                                    max_id = max_id, show_user=True, rpp=TWEET_COUNT) 
+                tweets = tweepy.Cursor(self.cred_handler.api.search, 
+                                       q="to:{0}".format(username), since_id=origin_tweet_id,
+                                       max_id = max_id, tweet_mode='extended').items() 
 
+                tweets = [tweet for tweet in tweets]
                 logging.info("Successfully queried {0} tweets.".format(len(tweets)))
                 logging.debug('Potential replies fetched, inspect data.')
                 
@@ -66,17 +79,14 @@ class ReplyQuerier(tweepy.API):
                 logging.debug("Examining: {0}".format(self.tweet_url(reply._json)))
 
                 if str(reply.in_reply_to_status_id) == origin_tweet_id:
-                    logging.info("\n:: HIT: Found a reply: {0}".format(self.tweet_url(reply._json)))
-                    self.c_reply += 1
-                    yield reply
-                    
+                    logging.info("\n:: HIT: Found a reply: {0} for: {1}".format(self.tweet_url(reply._json), self.tweet_url(origin_tweet)))
+                    replies.append(reply._json)
+                    try:                    
                     # Recursive call for getting the chain of replies
-                    # This recursive solution is modeled on: 
-                    # https://gist.github.com/edsu/54e6f7d63df3866a87a15aed17b51eaf
-                    # iteration might be easier
-
-                    for child_reply in self.get_replies_to_tweet(reply):
-                        yield child_reply
+                        for child_reply in self.get_replies_to_tweet(reply):
+                            pass
+                    except Exception:
+                        pass
                 else:
                     logging.debug("not a reply, discarding.")
                 max_id = reply.id
@@ -84,14 +94,16 @@ class ReplyQuerier(tweepy.API):
             if len(tweets) != TWEET_COUNT:
                 break
 
-    async def fetch_replies(self, N_SAVE_BATCH, query_flag):
-        # TODO: refactor to nicer format
+    def fetch_replies(self, N_SAVE_BATCH, query_flag):
         replies = []
 
         # For large
         for i,tweet in enumerate(self.io.next_tweet()):
-            logging.debug("\n\nInspecting tweet: %s" % self.tweet_url(tweet))
-            
+            try: 
+                logging.debug("\n\nInspecting tweet: %s" % self.tweet_url(tweet))
+            except Exception:
+                logging.error("Not a proper tweet object. Disgarding.")
+                continue
             # calculate offset between current time and first tweet in the read data
             now_ts   = time.time()
             tweet_dt = dt.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
@@ -106,9 +118,8 @@ class ReplyQuerier(tweepy.API):
                     # set query flag, allows the main() to reset reconn counter 
                     query_flag = True
                     
-                    # instantiate query and iterate over the received generator object 
-                    for reply in self.get_replies_to_tweet(tweet):
-                        replies.append(reply._json)
+                    # instantiate query  
+                    self.get_replies_to_tweet(tweet, replies)
                     
                     # add to the queried set                        
                     self.io.add_queried(tweet['id_str'])
