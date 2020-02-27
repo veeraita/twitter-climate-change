@@ -21,7 +21,7 @@ def main(args = None):
     # create log file
     log_file_handler = logging.FileHandler('logfile.log')
     formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
-    file_handler.setFormatter(formatter)
+    log_file_handler.setFormatter(formatter)
     # Gets or creates a logger
     logger = logging.getLogger(__name__)  
     # add file handler to logger
@@ -45,13 +45,12 @@ def main(args = None):
     
     while True:
         try:
-            stream.filter(track = sts.get_keywords(), locations=sts.location)
-            print("looping too much?")
-            #stream.sample()# Test maximum rates
+            logger.info('Opening a stream.')
+            stream.filter(track = sts.get_keywords())
         except Exception as ex:
-            print(ex)
             waittime = 5
-            print("Returning to stream after ",waittime, " seconds")
+            logger.error('Error: %s'%ex)
+            logger.info("Waiting %d seconds before attempting to open a new stream"%waittime)
             time.sleep(waittime)
 
 # run application

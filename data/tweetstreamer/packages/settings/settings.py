@@ -15,25 +15,35 @@ class Settings():
         self.logger = logging.getLogger(__name__)  
         # add file handler to logger
         self.logger.addHandler(log_file_handler)
-
-        f = open(stsfile, "r")
-        rawsts = {}
-        for line in f.readlines():
-            if len(line)>2:
-                s = line.rstrip().split()
-                rawsts[s[0]] = s[-1]
-        f.close()
-        self.credentialsfile = rawsts['credentialsfile']
-        self.keywordfile = rawsts['keywordfile']
-        self.location = rawsts['location']
-        self.json_dump = rawsts['json_dump']
+        self.logger.info("Reading settings file.")
+        try:
+            f = open(stsfile, "r")
+            rawsts = {}
+            for line in f.readlines():
+                if len(line)>2:
+                    s = line.rstrip().split()
+                    rawsts[s[0]] = s[-1]
+            f.close()
+            self.credentialsfile = rawsts['credentialsfile']
+            self.keywordfile = rawsts['keywordfile']
+            #self.location = rawsts['location']
+            self.json_dump = rawsts['json_dump']
+        except Exception as ex:
+            self.logger.error("Error while reading settings: %s"%str(ex))
+            self.logger.info("Exiting program.")
+            exit()
     def get_keywords(self):
         """
         reads keywords from a file and concatenates them
         keywords separarated with a newline
         """
-        
-        with open(self.keywordfile, "r") as f:
-            sep = '&'
-            ret = sep.join(f.read().split())
-            return ret
+        self.logger.info("Reading keywords.")
+        try:
+            with open(self.keywordfile, "r") as f:
+                sep = '&'
+                ret = sep.join(f.read().split())
+                return ret
+        except Exception as ex:
+            self.logger.error("Error while reading keywords: %s"%str(ex))
+            self.logger.info("Exiting program.")
+            exit()

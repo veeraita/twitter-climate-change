@@ -12,11 +12,17 @@ class Streamer(tweepy.StreamListener):
         self.logger = logging.getLogger(__name__)  
         # add file handler to logger
         self.logger.addHandler(log_file_handler)
-        
-        self.json_dump = json_dump
-        self.reconnection_attempts = 0 #count reconnection attempts
-        self.reconnections_limit = 9
-        super(Streamer,self).__init__()
+        try:
+            self.json_dump = json_dump
+            self.reconnection_attempts = 0 #count reconnection attempts
+            self.last_reconnection_time = time.time()
+            self.reconnections_limit = 9
+            super(Streamer,self).__init__()
+            #successfull initialization!
+            self.logger.info("Streamer initialized successfully.")
+        except Exception as ex:
+            self.logger.error("Error: %s. Exiting program."%ex)
+            exit()
     def on_data(self,data):
         """
         Dumps everything to a file in json format
@@ -40,23 +46,27 @@ class Streamer(tweepy.StreamListener):
 
         http://docs.tweepy.org/en/latest/streaming_how_to.html
         """
-        print("Encountered streaming error (", status_code, ")")
-        print(self.reconnection_attempts," reconnection attempts.")
+        self.logger.error("Encountered streaming error: %s"%str(status_code))
+        self.logger.info("Reconnection attempts: %s"%str(self.reconnection_attempts))
 
+        waittime = 2**self.reconnection_attempts
         if status_code in [420,429]: # rate limit exceeded
             # wait until rate limit is reset
             # NOTE API (created by credentialhandler) should take care of rate limits automatically
-            time.sleep(15*60)
-            self.reconnection_attempts += 1
-        elif self.reconnection_attempts < self.reconnections_limit:
-            # if there is some other error (internet connectione etc)
-            wait_time = 2**self.reconnection_attempts
-            print("Waiting ",wait_time, "s and reconnecting.")
-            time.sleep(wait_time)
-            self.reconnection_attempts += 1
-            return True
-        else:
-            print("Reconnection attempts limit exceeded.")
-            print("Terminating.")
-            exit()
+            self.logger.warning("Rate limit exceeded.")
+            waittime = 60*15
+        # if there is some other error (internet connectione etc)
+        if time.time() >= self.last_reconnection_time + 60*60*2:
+            # null counter if two hours since last reconnection
+            self.reconnection_attempts = 0
+            self.logger.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
+        self.logger.info("Waiting %d s and reconnecting."%waittime)
+        time.sleep(waittime)
+        self.reconnection_attempts += 1
+        self.last_reconnection_time = time.time()
+        return True
+        #else:
+        #    print("Reconnection attempts limit exceeded.")
+        #    print("Terminating.")
+        #    exit()
 

@@ -21,9 +21,14 @@ class CredentialHandler:
         self.logger = logging.getLogger(__name__)  
         # add file handler to logger
         self.logger.addHandler(log_file_handler)
-
-        self.credentialsfile = credentialsfile
-        self.__set_credentials()
+        try:
+            self.credentialsfile = credentialsfile
+            self.__set_credentials()
+            self.logger.info("Credentials read successfully.")
+        except Exception as ex:
+            self.logger.error("Error while reading credentials: %s"%str(ex))
+            self.logger.info("Exiting program.")
+            exit()
     def __set_credentials(self):
         """
         Asks user for encryption key
@@ -43,8 +48,9 @@ class CredentialHandler:
                 print('Invalid key. Please try again.', error) 
             else: 
                 print('Valid password.') 
+                self.logger.info("Credentials read successfully.")
                 return
-        quit()
+        raise Exception("Wrong password.")
     def __decrypt(self, key):
         """
         Read and decrypt password file, authenticate tweepy api
@@ -68,7 +74,8 @@ class CredentialHandler:
         auth.set_access_token(credentials['access_token'], credentials['access_token_secret'])
         # set api to wait and reconnect automatically in case of rate limit error
         self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-            
+        self.logger.info("Twitter authentication established successfully.")
+        
     def get_auth(self):
         return self.api.auth
         
