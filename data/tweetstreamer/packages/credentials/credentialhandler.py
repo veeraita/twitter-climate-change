@@ -2,6 +2,7 @@ import getpass
 import sys
 import os
 import tweepy
+import logging
 from cryptography.fernet import Fernet
 
 
@@ -12,10 +13,15 @@ class CredentialHandler:
     returns twitter api authentication
     """
     # TODO checkout https://stackoverflow.com/questions/42568262/how-to-encrypt-text-with-a-password-in-python
-    def __init__(self, credentialsfile):
+    def __init__(self, credentialsfile, log_file_handler):
         """
         iostream: input / output stream created by ioHandler
         """
+        # Gets or creates a logger
+        self.logger = logging.getLogger(__name__)  
+        # add file handler to logger
+        self.logger.addHandler(log_file_handler)
+
         self.credentialsfile = credentialsfile
         self.__set_credentials()
     def __set_credentials(self):

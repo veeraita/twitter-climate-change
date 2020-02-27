@@ -1,12 +1,18 @@
 import tweepy
 import sys
 import time
+import logging
 
 class Streamer(tweepy.StreamListener):
-    def __init__(self, json_dump):
+    def __init__(self, json_dump, log_file_handler):
         """
         define output files here
         """
+        # Gets or creates a logger
+        self.logger = logging.getLogger(__name__)  
+        # add file handler to logger
+        self.logger.addHandler(log_file_handler)
+        
         self.json_dump = json_dump
         self.reconnection_attempts = 0 #count reconnection attempts
         self.reconnections_limit = 9

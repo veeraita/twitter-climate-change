@@ -1,6 +1,6 @@
-
+import logging
 class Settings():
-    def __init__(self, stsfile):
+    def __init__(self, stsfile, log_file_handler):
         """
         Settings should contain:
         credentialsfile: encrypted credentials binary file path
@@ -11,6 +11,11 @@ class Settings():
         # marks comments
         empty lines are removed
         """
+        # Gets or creates a logger
+        self.logger = logging.getLogger(__name__)  
+        # add file handler to logger
+        self.logger.addHandler(log_file_handler)
+
         f = open(stsfile, "r")
         rawsts = {}
         for line in f.readlines():
