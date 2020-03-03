@@ -18,7 +18,8 @@ class CredentialHandler:
         iostream: input / output stream created by ioHandler
         """
         # Gets or creates a logger
-        self.logger = logging.getLogger(__name__)  
+        self.logger = logging.getLogger(__name__) 
+        self.logger.setLevel(logging.INFO) 
         # add file handler to logger
         self.logger.addHandler(log_file_handler)
         try:

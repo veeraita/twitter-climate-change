@@ -13,6 +13,7 @@ class Settings():
         """
         # Gets or creates a logger
         self.logger = logging.getLogger(__name__)  
+        self.logger.setLevel(logging.INFO)
         # add file handler to logger
         self.logger.addHandler(log_file_handler)
         self.logger.info("Reading settings file.")

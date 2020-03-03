@@ -24,6 +24,7 @@ def main(args = None):
     log_file_handler.setFormatter(formatter)
     # Gets or creates a logger
     logger = logging.getLogger(__name__)  
+    logger.setLevel(logging.INFO)
     # add file handler to logger
     logger.addHandler(log_file_handler)
     # Logs
@@ -34,6 +35,7 @@ def main(args = None):
     logger.error('A Major error has happened.')
     logger.critical('Fatal error. Cannot continue')
     """
+    logger.info("yay!")
     # read settings file
     sts = Settings(args,log_file_handler)
     # decrypt twitter credentials
@@ -48,7 +50,7 @@ def main(args = None):
             logger.info('Opening a stream.')
             stream.filter(track = sts.get_keywords())
         except Exception as ex:
-            waittime = 5
+            waittime = 60
             logger.error('Error: %s'%ex)
             logger.info("Waiting %d seconds before attempting to open a new stream"%waittime)
             time.sleep(waittime)
