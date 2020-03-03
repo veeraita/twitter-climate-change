@@ -27,7 +27,7 @@ class CredentialHandler:
             self.__set_credentials()
             self.logger.info("Credentials read successfully.")
         except Exception as ex:
-            self.logger.error("Error while reading credentials: %s"%str(ex))
+            self.logger.error("Error while reading credentials: %s",repr(ex))
             self.logger.info("Exiting program.")
             exit()
     def __set_credentials(self):

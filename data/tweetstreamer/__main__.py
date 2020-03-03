@@ -25,7 +25,10 @@ def main(args = None):
     # Gets or creates a logger
     logger = logging.getLogger(__name__)  
     logger.setLevel(logging.INFO)
+    
+    #logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
     # add file handler to logger
+
     logger.addHandler(log_file_handler)
     # Logs
     """
@@ -42,17 +45,19 @@ def main(args = None):
     ch = CredentialHandler(sts.credentialsfile, log_file_handler)
     # create streamlistener
     streamer = Streamer(sts.json_dump, log_file_handler)
-    # start streaming
+    # create streaming object
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
-    
+    # read keywords
+    keywords = sts.get_keywords()
     while True:
         try:
+            # start streaming
             logger.info('Opening a stream.')
-            stream.filter(track = sts.get_keywords())
+            stream.filter(track = keywords)
         except Exception as ex:
-            waittime = 60
-            logger.error('Error: %s'%ex)
-            logger.info("Waiting %d seconds before attempting to open a new stream"%waittime)
+            waittime = 5
+            logger.error('Error: %s',repr(ex))
+            logger.info("Waiting %d seconds before attempting to open a new stream",waittime)
             time.sleep(waittime)
 
 # run application

@@ -22,7 +22,7 @@ class Streamer(tweepy.StreamListener):
             #successfull initialization!
             self.logger.info("Streamer initialized successfully.")
         except Exception as ex:
-            self.logger.error("Error: %s. Exiting program."%ex)
+            self.logger.error("Error: %s. Exiting program.",repr(ex))
             exit()
     def on_data(self,data):
         """
@@ -47,8 +47,8 @@ class Streamer(tweepy.StreamListener):
 
         http://docs.tweepy.org/en/latest/streaming_how_to.html
         """
-        self.logger.error("Encountered streaming error: %s"%str(status_code))
-        self.logger.info("Reconnection attempts: %s"%str(self.reconnection_attempts))
+        self.logger.error("Encountered streaming error: %s",repr(status_code))
+        self.logger.info("Reconnection attempts: %d",(self.reconnection_attempts))
 
         waittime = 2**self.reconnection_attempts
         if status_code in [420,429]: # rate limit exceeded
@@ -61,7 +61,7 @@ class Streamer(tweepy.StreamListener):
             # null counter if two hours since last reconnection
             self.reconnection_attempts = 0
             self.logger.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
-        self.logger.info("Waiting %d s and reconnecting."%waittime)
+        self.logger.info("Waiting %d s and reconnecting.",waittime)
         time.sleep(waittime)
         self.reconnection_attempts += 1
         self.last_reconnection_time = time.time()

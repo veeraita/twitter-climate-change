@@ -30,7 +30,7 @@ class Settings():
             #self.location = rawsts['location']
             self.json_dump = rawsts['json_dump']
         except Exception as ex:
-            self.logger.error("Error while reading settings: %s"%str(ex))
+            self.logger.error("Error while reading settings: %s",repr(ex))
             self.logger.info("Exiting program.")
             exit()
     def get_keywords(self):
@@ -43,8 +43,9 @@ class Settings():
             with open(self.keywordfile, "r") as f:
                 sep = '&'
                 ret = sep.join(f.read().split())
+                self.logger.info("Keywords read successfully.")
                 return ret
         except Exception as ex:
-            self.logger.error("Error while reading keywords: %s"%str(ex))
+            self.logger.error("Error while reading keywords: %s",repr(ex))
             self.logger.info("Exiting program.")
             exit()
