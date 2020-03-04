@@ -47,7 +47,7 @@ class Streamer(tweepy.StreamListener):
         timenow = datetime.now()
         
         if timenow >= self.filetime: #time to create new file
-            self.filetime += timedelta(seconds=20)
+            self.filetime += timedelta(days=1, hours= 3) 
             filename = "%s_%s.json"%(self.json_dump,str(self.filetime))
             self.jsonfilename = ''.join(c for c in filename if c in self.valid_chars) #parse out not allowed characters
             with open(self.jsonfilename, 'w+') as f:
