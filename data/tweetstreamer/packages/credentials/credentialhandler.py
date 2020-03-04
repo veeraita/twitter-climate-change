@@ -35,9 +35,11 @@ class CredentialHandler:
         Asks user for encryption key
         """
         print("Type key for encrypted Twitter credentials file")
-        print("You have tree attempts, after which the program terminates")
+        print("You have three attempts, after which the program terminates")
         for _ in range(3):
             try: 
+                # Password request should be added here and would replace lines 42-48, but I am not sure how to deal with the self.__decrypt(key) line
+
                 sys.stdout = open(os.devnull, "w") # switch off console output to suppress echo
                 sys.stderr= open(os.devnull, "w")
                 key = input(">>").encode()
