@@ -1,0 +1,7 @@
+# this is a test setupfile for tweetstreamer
+
+credentialsfile	credentials_nuutti.bin
+keywordfile testkeywordsfile.txt
+#location '40.687244,-73.895110,20km'
+json_dump test_rawoutput
+#csv_out	test_csvout.csv

@@ -7,4 +7,6 @@ This repository contains scripts / jupyter notebooks for the course project.
   * Network-based analysis
   * Content-based analysis 
 
-2. **data:** includes possible (small samples) of toy data files for building the initial models.
+2. **data:** contains the main and sub-classes of the data fetching scripts:
+  * tweetstreamer
+  * replyquerier. 

@@ -1,3 +1,7 @@
+.gitignore
 .ipynb_checkpoints
 __pycache__/
 *.log
+data/toy_data
+data/.credentials
+data/reply_querier/.keyfile
