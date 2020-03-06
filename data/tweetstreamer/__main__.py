@@ -19,17 +19,17 @@ def main(args = None):
     if args is None:
         args = sys.argv[1] #settings file name
     # create log file
-    log_file_handler = logging.FileHandler('logfile.log')
-    formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
-    log_file_handler.setFormatter(formatter)
+    # log_file_handler = logging.FileHandler('logfile.log')
+    # formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+    # log_file_handler.setFormatter(formatter)
     # Gets or creates a logger
-    logger = logging.getLogger(__name__)  
-    logger.setLevel(logging.INFO)
+    logger = logging.getLogger()  
+    logger.setLevel(logging.DEBUG)
     
     #logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
     # add file handler to logger
 
-    logger.addHandler(log_file_handler)
+    # logger.addHandler(log_file_handler)
     # Logs
     """
     logger.debug('A debug message')
@@ -40,11 +40,14 @@ def main(args = None):
     """
     logger.info("yay!")
     # read settings file
-    sts = Settings(args,log_file_handler)
+    sts = Settings(args)
     # decrypt twitter credentials
-    ch = CredentialHandler(sts.credentialsfile, log_file_handler)
+    ch = CredentialHandler(sts.credentialsfile)
+    # authenticate by Tweepy OAuth2
+    logging.info('Initializing auth')
+    ch.authenticate()
     # create streamlistener
-    streamer = Streamer(sts.json_dump, log_file_handler)
+    streamer = Streamer(sts.json_dump)
     # create streaming object
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
     # read keywords
