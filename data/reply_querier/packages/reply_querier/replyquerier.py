@@ -7,8 +7,8 @@ from datetime import datetime as dt
 
 class ReplyQuerier(tweepy.API):
     """
-    ReplyQuerier class for querying the search API. Dependent on tweepy,
-    outputs list of tweets.
+    ReplyQuerier takes care of the application logic for conducting queries using 
+    Twitter Search API, dependent on tweepy.
 
     ...
 
@@ -22,117 +22,188 @@ class ReplyQuerier(tweepy.API):
         Set the limit for reconnections.
     
     """
-    def __init__(self, io, cred_handler, sts, reconn_limit = 9):
-        """
-        define output files here
-        """
+    def __init__(self, io, cred_handler, sts, reconn_limit = 9, MAX_QUERY_CHAR = 200):
+        self.__query_len     = MAX_QUERY_CHAR
+        self.__ids           = []
+        self.__tweet_ids     = []
+        self.__input_stack   = []
+
+        self.output_stack    = []
         self.sts             = sts
         self.io              = io
+        self.query_count     = 0
+        self.reply_count     = 0
+        self.process_count   = 0
         self.cred_handler    = cred_handler
         self.reconn_limit    = reconn_limit
         self.reconn_attempts = 0 # count reconnection attempts
         super(ReplyQuerier,self).__init__()
-    
-    def tweet_url(self, tweet):
-        return "https://twitter.com/{0}/status/{1}".format(tweet['user']['screen_name'], tweet['id_str'])
 
-    def get_replies_to_tweet(self, origin_tweet, replies):
-        """Get replies to a given tweet. Recursive function."""
-        
-        WAIT_PERIOD = 60
-        TWEET_COUNT = 100
+    def __tweet_url(self, screen_name, tweet_id_str):
+        return "https://twitter.com/{0}/status/{1}".format(screen_name, tweet_id_str)
 
-        # shallow mechanism for dealing with mismatch of data types
-        if type(origin_tweet) != dict: 
-            origin_tweet = origin_tweet._json
-
-        username = origin_tweet['user']['screen_name']
-        origin_tweet_id = origin_tweet['id_str']
-        max_id = None
-
-        logging.info("Looking for replies to: {0}".format(self.tweet_url(origin_tweet)))
-
-        while True:
-            # Query tweets that are directed to the user of the origin tweet 
+    def __generate_next_query(self):
+        """Generates query from the tweets in the input stack."""
+        query = ''
+        tweets = []
+        while len(self.__input_stack) > 0:
+            tweet = self.__input_stack.pop()
             try:
-                tweets = tweepy.Cursor(self.cred_handler.api.search, 
-                                       q="to:{0}".format(username), since_id=origin_tweet_id,
-                                       max_id = max_id, tweet_mode='extended').items() 
+                uname = tweet['user']['screen_name']
+                is_seen = tweet['id_str'] in self.__tweet_ids or tweet['id_str'] in self.io.queried
+                if not is_seen:
+                    tmp_query = "to: {0}".format(uname) if query == '' else '{0} OR {1}'.format(query, uname)
+                    if len(tmp_query) > self.__query_len: break
+                    else: query = tmp_query 
+                    tweets.append(tweet)
 
-                tweets = [tweet for tweet in tweets]
-                logging.info("Successfully queried {0} tweets.".format(len(tweets)))
-                logging.debug('Potential replies fetched, inspect data.')
+            except Exception as e:
+                logging.info("(in __generate_next_query): No user info. Ignoring tweet.")
+                continue 
+        logging.info("Generated new query: {}".format(query))
+        return query, tweets
+
+    def __add_matching(self, tweets):
+        for tweet in tweets:
+            logging.info("Examining (in __add_matching method): {0}".format(self.__tweet_url(tweet.user.screen_name, tweet.id_str)))
+
+            in_repl_to = str(tweet.in_reply_to_status_id)
+            if in_repl_to is not None: 
+                if (in_repl_to in self.__ids):
+                    if (tweet.id_str not in self.io.queried or tweet.id_str not in self.__tweet_ids):
+                        logging.info("\n:: HIT: Found a reply: {0} for: {1}".format(self.__tweet_url(tweet.user.screen_name, tweet.id_str),
+                                                                                    self.__tweet_url(tweet.in_reply_to_screen_name, 
+                                                                                                     tweet.in_reply_to_status_id_str)))    
+                        self.__input_stack.append(tweet._json)      # add to tweets to be queried 
+                        self.__ids.append(tweet.user.id_str)        # add to the "cache" for quick searchs
+                        self.output_stack.append(tweet._json)       # keep note of output
+                        self.reply_count += 1
+                        logging.info('Added tweets to stack, reply count {}'.format(self.reply_count))
+                    else: logging.info("Tweet already processed, discarding.") 
+                else: logging.info("Not a reply to any known origin tweet, discarding.")
+            else: 
+                logging.debug("not a reply, discarding.")
+            self.process_count += 1
+            self.__tweet_ids.append(tweet.id_str) # Add tweet to already queried
+
+    def __refill_stack(self, MIN_INPUT_STACK_SIZE, MAX_INPUT_STACK_SIZE):
+        """Fills the input stack with new tweets from the original tweet file to ensure 
+           that there is always enough available for the queries."""
+
+        if len(self.__input_stack) <= MIN_INPUT_STACK_SIZE:
+            while len(self.__input_stack) < MAX_INPUT_STACK_SIZE:
+                self.__input_stack.append(next(self.io.next_tweet()))
+    
+    def __to_seconds(self, seconds):
+        return seconds*3600*24    
+
+    def get_replies_to_tweets(self, query, since_id, max_id):
+        """Queries replies to a set of tweets using Search API."""
+        
+        WAIT_PERIOD    = 60
+        MIN_QUERY_CHAR = 25
+        # TWEET_COUNT    = 100
+    
+        # TODO: ensure proper type matching in the IO
+        # # shallow mechanism for dealing with mismatch of data types
+        # if type(origin_tweet) != dict: 
+        #     origin_tweet = origin_tweet._json
+        query_attempt = True
+        while query_attempt:
+            try:
+                tweets = tweepy.Cursor(self.cred_handler.api.search, q = query, 
+                                    since_id= since_id, max_id = max_id, 
+                                    tweet_mode = 'extended').items() 
                 
-                reconn_attempts = 0
+                self.query_count += 1
+                tweets = [tweet for tweet in tweets] # from tweepy iterator to list
+
+                logging.info("Successfully queried {0} tweets.".format(len(tweets)))
+                logging.info('Potential replies fetched, tweets queued {}, inspecting data.'.format(len(self.__input_stack)))
+                self.reconn_attempts = 0 # Zero reconn attempts
+                query_attempt = False
+                
             except tweepy.error.TweepError as e:
                 logging.error(":: ERROR: caught twitter API exception while fetching the replies: %s", e)
-                time.sleep(WAIT_PERIOD*self.reconn_limit)
-                
+                if '414' in repr(e): 
+                    # In case of too long queries, trim the length of max query by one query (on avg 12 char)
+                    self.__query_len = max(self.__query_len-12, MIN_QUERY_CHAR)
+
                 self.reconn_attempts += 1
+                time.sleep(WAIT_PERIOD*self.reconn_attempts)
+                
                 logging.info("Reconnection attempt # {0}.".format(self.reconn_attempts))
-                if reconn_attempts == reconn_limit:
+
+                if self.reconn_attempts == self.reconn_limit:
                     logging.error(':: TIMEOUT: Limit for reconnection attempt reached.')
                     raise
                 continue
-            
-            for reply in tweets:
-                logging.debug("Examining: {0}".format(self.tweet_url(reply._json)))
 
-                if str(reply.in_reply_to_status_id) == origin_tweet_id:
-                    logging.info("\n:: HIT: Found a reply: {0} for: {1}".format(self.tweet_url(reply._json), self.tweet_url(origin_tweet)))
-                    replies.append(reply._json)
-                    try:                    
-                    # Recursive call for getting the chain of replies
-                        for child_reply in self.get_replies_to_tweet(reply):
-                            pass
-                    except Exception:
-                        pass
-                else:
-                    logging.debug("not a reply, discarding.")
-                max_id = reply.id
+        # Inspect queried tweets and add matched to stack(s)
+        self.__add_matching(tweets)
+
+        # TODO: expand to also query parent tweets
+
+        # Save periodically
+        if len(self.output_stack) >= self.io.batch_size:
+            logging.debug('Saving batch, {} tweets processed, {} saved.'.format(self.process_count, len(self.output_stack)))
                 
-            if len(tweets) != TWEET_COUNT:
-                break
+            if self.io.save(self.output_stack):
+                del self.output_stack  # free up memory
+                self.output_stack = [] # re-init stack
+        
+    def __get_time_offset(self, tweets):
+        """Returns the min time offset between current time and a set of tweets."""
+        FROM    = '%a %b %d %H:%M:%S +0000 %Y'
+        now_ts  = time.time()
+        offset  = lambda x: now_ts - time.mktime(dt.timetuple(dt.strptime(x['created_at'], FROM)))
+        timeset = map(offset, tweets)
 
-    def fetch_replies(self, N_SAVE_BATCH, query_flag):
-        replies = []
+        return min(timeset)     
 
-        # For large
-        for i,tweet in enumerate(self.io.next_tweet()):
-            try: 
-                logging.debug("\n\nInspecting tweet: %s" % self.tweet_url(tweet))
-            except Exception:
-                logging.error("Not a proper tweet object. Disgarding.")
-                continue
+    def start_logic(self, query_flag):
+        """Logical process taking care of the fetching of replies."""
+        MIN_INPUT_STACK_SIZE = 10
+        MAX_INPUT_STACK_SIZE = 10 * MIN_INPUT_STACK_SIZE
+        
+        try:
+            self.__refill_stack(MIN_INPUT_STACK_SIZE,MAX_INPUT_STACK_SIZE)
+        except StopIteration as e:
+            logging.info('No more blocks left in the read file: {}'.format(self.sts.json_read_path))
+
+        while len(self.__input_stack) > 0:
+        
             # calculate offset between current time and first tweet in the read data
-            now_ts   = time.time()
-            tweet_dt = dt.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
-            offset   = now_ts - time.mktime(dt.timetuple(tweet_dt))
+            query, tweets = self.__generate_next_query()
+
+            # keep note of which ids are searched for
+            for tw in tweets:
+                self.__ids.append(tw['id_str'])
+
+            # limit the query to [since_id, max_id] to filter out unneccessary tweets
+            since_id = min(tweets, key=lambda x: x['id'])['id']
+            
+            # max_id   = max(tweets, key=lambda x: x['id']) 
+            max_id = None
+            offset = self.__get_time_offset(tweets)
             
             # only fetch search if offset is bigger than the treshold
-            if offset >= 3600*24*self.sts.time_treshold:        
+            if offset >= self.__to_seconds(self.sts.time_treshold):
+                for tw in tweets:
+                    logging.info("Looking for replies to: {0}".format(self.__tweet_url(tw['user']['screen_name'], tw['id_str'])))
+
+                check_queried = lambda x: x['id_str'] in self.io.queried
+                in_queried = list(map(check_queried, tweets))  
                 # ensure that tweet has not already been queried
-                if tweet['id_str'] not in self.io.queried:
-                    logging.debug("Tweet not in queried set, initializing query.")  
-                    
+                if not all(in_queried):
+                    logging.info("Tweet not in queried set, initializing query.")  
                     # set query flag, allows the main() to reset reconn counter 
                     query_flag = True
-                    
                     # instantiate query  
-                    self.get_replies_to_tweet(tweet, replies)
-                    
+                    self.get_replies_to_tweets(query, since_id, max_id)
                     # add to the queried set                        
-                    self.io.add_queried(tweet['id_str'])
-                    
-                    # save periodically (if batch size is full)
-                    if i % N_SAVE_BATCH == 0:
-                        logging.debug('Saving batch, {} tweets processed, {} saved.'.format(i,len(replies)))
-                
-                        if self.io.save(replies):
-                            replies = []
-                else: 
-                    logging.debug('Tweet already in queried set, ignoring.')
-                
+                    self.io.add_queried(tweets)
+                else: logging.info('Tweet already in queried set, ignoring.')
             else: 
                 # Sleep until time treshold to maximize
                 # the likelihood of discussion thread having closed
@@ -142,11 +213,14 @@ class ReplyQuerier(tweepy.API):
                 logging.info("Waiting until next tweet is over the time treshold.")
                 logging.info("Process hibernates for {0:.0f} hours {1} minutes.".format(hiber_time / 3600, int(hiber_time) % 60))
 
-                if len(replies) != 0:        
-                    if self.io.save(replies):
-                        replies = []
+                if len(self.output_stack) > 0:        
+                    if self.io.save(self.output_stack):
+                        del self.output_stack
+                        self.output_stack = []
                     
                 time.sleep(hiber_time)
 
-        ready_flag = True
-        return replies
+            try:
+                self.__refill_stack(MIN_INPUT_STACK_SIZE,MAX_INPUT_STACK_SIZE)
+            except StopIteration as e:
+                logging.info('No more blocks left in the read file: {}'.format(self.sts.json_read_path))
