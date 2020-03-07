@@ -14,19 +14,19 @@ class Streamer(tweepy.StreamListener):
         """
         # create new json dump file every day at certain hour
         #self.newfiletime = time0.replace(day=x.day, hour=1, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        self.filetime = datetime.now()
-        self.valid_chars = "-_.()%s%s" % (string.ascii_letters, string.digits)
+        date_now = datetime.utcnow().strftime("%d/%m/%Y")
+        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M") # Houston 3am = UTC 9am 
         
         # Gets or creates a logger
         # self.logger = logging.getLogger(__name__) 
         # self.logger.setLevel(logging.INFO) 
         # add file handler to logger
         # self.logger.addHandler(log_file_handler)
-        self.splittimeperiod = time
+        # self.splittimeperiod = time
         try:
             self.json_dump = json_dump
-            filename = "%s_%s.json"%(self.json_dump,str(self.filetime))
-            self.jsonfilename = ''.join(c for c in filename if c in self.valid_chars)
+            self.jsonfilename = "%s_%s.json"%(self.json_dump.replace(".json",""),str(self.filetime.strftime("%d-%m-%Y")))
+
             with open(self.jsonfilename, 'w+') as f:
                 #create new file
                 pass
@@ -39,25 +39,33 @@ class Streamer(tweepy.StreamListener):
         except Exception as ex:
             logging.error("Error: %s. Exiting program.",repr(ex))
             exit()
+    
+    def set_new_date():
+        date_now = datetime.utcnow().strftime("&d/%m/%Y")
+        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%m/%j/%y %H:%M")
+        
     def on_data(self,data):
         """
         Dumps everything to a file in json format
         """
         #reset reconnection attempts
         self.reconnection_attempts = 0
-        timenow = datetime.now()
-        
-        if timenow >= self.filetime: #time to create new file
-            self.filetime += timedelta(days=1, hours= 3) 
-            filename = "%s_%s.json"%(self.json_dump,str(self.filetime))
+
+        timenow = datetime.utcnow()
+        offset  = timenow - self.filetime
+        if offset.days > 1: #time to create new file
+            self.set_new_date()
+
+            filename = "%s_%s.json"%(self.json_dump.replace(".json",""),str(self.filetime))
             self.jsonfilename = ''.join(c for c in filename if c in self.valid_chars) #parse out not allowed characters
             with open(self.jsonfilename, 'w+') as f:
                 #create new file
                 pass
 
         with open(self.jsonfilename, "a", encoding='utf-8') as f:
-            f.write(data)#json.dump(data, f, ensure_ascii=False, indent=4)
+            f.write(data.rstrip('\n'))
             return
+
     def on_error(self, status_code):
         """
         twitter recommends immediate reconnection attempt with exponential wait pattern>
