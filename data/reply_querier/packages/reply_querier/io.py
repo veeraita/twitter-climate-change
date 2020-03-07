@@ -24,24 +24,25 @@ class Io:
     
     """
     
-    def __init__(self, json_read_file, json_write_file, queried_path):
+    def __init__(self, json_read_file, json_write_file, queried_path, batch_size):
         """
         Initialize the object.
         """
-        self.__QUERIED_SIZE  = 5 # interval of save
+        self.__QUERIED_SIZE  = 5 # treshold for how many in-memory queries are kept until next save
         self.__BLOCK_SIZE    = 5 # the number of tweets read into memory at once
 
+        self.batch_size      = batch_size # treshold for how many found replies are kept in-memory
         self.json_read_file  = open(json_read_file, 'r')
         self.json_write_file = open(json_write_file, 'a')
         self.queried_path    = queried_path 
-        self.process_count   = 0
+        self.queried         = []
+        self.read_count      = 0
         self.__query_count   = 0
         self.c_saved         = 0
 
         # If file doesn't exist, create new file to the same path
         if not os.path.exists(queried_path):
             open(queried_path, 'w').close()
-            self.queried = []
         else:
             self.__load_queried_set(queried_path)
             
@@ -75,13 +76,13 @@ class Io:
             i += 1
             if i % self.__BLOCK_SIZE == 0:
                 yield block
-                self.process_count += self.__BLOCK_SIZE
+                self.read_count += self.__BLOCK_SIZE
                 i = 0
                 block = []
 
         if block:
             yield block
-            self.process_count += i
+            self.read_count += i
 
     def __load_queried_set(self, path):
         try:
@@ -107,13 +108,14 @@ class Io:
             
             logging.debug('Tweet generator object empty, calling next block.') 
 
-    def add_queried(self, tweet_id):
-        """Add tweet to queried set, store only periodically to save time on slow IO requests."""    
-        self.__query_count += 1
-        self.queried.append(tweet_id)
-        
-        if self.__query_count == self.__QUERIED_SIZE:
-            logging.info("Saving the queried set.") 
+    def add_queried(self, tweets):
+        """Add tweet(s) to queried set, store only periodically to save time on slow IO requests."""    
+        for tw in tweets:
+            self.__query_count += 1
+            self.queried.append(tw['id_str'])
+            
+        if self.__query_count > self.__QUERIED_SIZE:
+            logging.info("Saving the queried set.")
             self.__save_queried_set()
             self.__query_count = 0
 

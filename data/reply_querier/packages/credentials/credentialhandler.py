@@ -2,7 +2,6 @@ import getpass
 import tweepy
 from cryptography.fernet import Fernet
 
-
 class CredentialHandler:
     """
     Class for handling Twitter keys securely.

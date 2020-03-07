@@ -15,15 +15,22 @@ def log_stats(start_time, MAX_C_TIMEOUTS, io, rquerier, n_timeouts):
 
     logging.info(':: ReplyQuerier SHUTDOWN INITIATED: Limit ({0}) of consequtive reconnection attempts reached.'.format(MAX_C_TIMEOUTS))
     logging.info(':: STATS: execution time {0:.0f} days, {1}'.format(run_time // (24*3600), time_st))
-    logging.info('\tTweets processed {0}, replies saved {1}'.format(io.process_count, io.c_saved))
+    logging.info('\tTweets processed {0}, replies saved {1}'.format(rquerier.process_count, io.c_saved))
     logging.info('\tTotal number of reconnection timeouts: {0}'.format(n_timeouts))
 
 def main(args = None):
 
-    N_SAVE_BATCH   = 1    # period for how often replies are saved
-    BASE_WAIT_TIME = 2    # high level wait time while reconnecting
-    MAX_WAIT_TIME  = 3600 # max wait time
+    N_SAVE_BATCH   = 1    # quota of replies kept in memory until next save 
+    BASE_WAIT_TIME = 4    # high level wait time while reconnecting 
+    MAX_QUERY_CHAR = 500
     MAX_C_TIMEOUTS = 9    # max number of timeouts
+    MAX_WAIT_TIME  = 3600 # max wait time
+    
+    logging.basicConfig(
+        filename="replyquerier.log",
+        level=logging.DEBUG,
+        format="%(asctime)s:%(levelname)s:%(message)s"
+    )
     
     debug_mode = False
 
@@ -49,7 +56,8 @@ def main(args = None):
     args       = parser.parse_args()
     debug_mode = args.debug
     keyfile    = args.keyfile 
-    logger     = logging.getLogger()
+    logger     = logging.getLogger('ReplyQuerier: Main')
+    
     logger.setLevel(logging.DEBUG) if debug_mode else logger.setLevel(logging.INFO) 
 
     # 1. read settings file
@@ -57,24 +65,25 @@ def main(args = None):
 
     # 2. decrypt and authenticate 
     cred_handler = CredentialHandler(sts.credentialsfile, keyfile)
-    logging.info("Initialized successfully.\nStarting operation...")
+    logger.info("Initialized successfully.\nStarting operation...")
 
     # instantiate Io module
-    io = Io(sts.json_read_path, sts.json_write_path, sts.queried)
+    io = Io(sts.json_read_path, sts.json_write_path, sts.queried, N_SAVE_BATCH)
 
     while True:
         # instantiate replyquerier
-        rquerier = ReplyQuerier(io, cred_handler, sts) 
+        rquerier = ReplyQuerier(io, cred_handler, sts, MAX_QUERY_CHAR) 
         
         # block until complete, use flag to reset the number of 
         # conseq_timeouts variable in cases of consequtive timeout
         query_flag = False
-        replies = rquerier.fetch_replies(N_SAVE_BATCH, query_flag)
+        rquerier.start_logic(query_flag)
         logging.info("All tweets in {0} processed.".format(sts.json_read_path)) 
         
         if query_flag: conseq_timeouts = 0
-        if len(replies) > 0:
-            io.save(replies)
+
+        if len(rquerier.output_stack) > 0:
+            io.save(rquerier.output_stack)
         
         if conseq_timeouts == MAX_C_TIMEOUTS:
             log_stats(start_time, MAX_C_TIMEOUTS, io, rquerier, n_timeouts)        
