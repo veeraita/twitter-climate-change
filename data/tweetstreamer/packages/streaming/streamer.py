@@ -1,13 +1,14 @@
 import tweepy
 import sys
 import time
+import json
 import logging
 from datetime import datetime, timedelta
 import string
 
 
 class Streamer(tweepy.StreamListener):
-    def __init__(self, json_dump, log_file_handler):
+    def __init__(self, json_dump):
         """
         define output files here
         """
@@ -17,10 +18,10 @@ class Streamer(tweepy.StreamListener):
         self.valid_chars = "-_.()%s%s" % (string.ascii_letters, string.digits)
         
         # Gets or creates a logger
-        self.logger = logging.getLogger(__name__) 
-        self.logger.setLevel(logging.INFO) 
+        # self.logger = logging.getLogger(__name__) 
+        # self.logger.setLevel(logging.INFO) 
         # add file handler to logger
-        self.logger.addHandler(log_file_handler)
+        # self.logger.addHandler(log_file_handler)
         self.splittimeperiod = time
         try:
             self.json_dump = json_dump
@@ -34,9 +35,9 @@ class Streamer(tweepy.StreamListener):
             self.reconnections_limit = 9
             super(Streamer,self).__init__()
             #successfull initialization!
-            self.logger.info("Streamer initialized successfully.")
+            logging.info("Streamer initialized successfully.")
         except Exception as ex:
-            self.logger.error("Error: %s. Exiting program.",repr(ex))
+            logging.error("Error: %s. Exiting program.",repr(ex))
             exit()
     def on_data(self,data):
         """
@@ -54,8 +55,8 @@ class Streamer(tweepy.StreamListener):
                 #create new file
                 pass
 
-        with open(self.jsonfilename, "a") as f:
-            f.write(data)
+        with open(self.jsonfilename, "a", encoding='utf-8') as f:
+            f.write(data)#json.dump(data, f, ensure_ascii=False, indent=4)
             return
     def on_error(self, status_code):
         """
@@ -72,8 +73,8 @@ class Streamer(tweepy.StreamListener):
 
         http://docs.tweepy.org/en/latest/streaming_how_to.html
         """
-        self.logger.error("Encountered streaming error: %s",repr(status_code))
-        self.logger.info("Reconnection attempts: %d",(self.reconnection_attempts))
+        logging.error("Encountered streaming error: %s",repr(status_code))
+        logging.info("Reconnection attempts: %d",(self.reconnection_attempts))
 
         waittime = 2**self.reconnection_attempts
         if status_code in [420,429]: # rate limit exceeded
@@ -85,8 +86,8 @@ class Streamer(tweepy.StreamListener):
         if time.time() >= self.last_reconnection_time + 60*60*2:
             # null counter if two hours since last reconnection
             self.reconnection_attempts = 0
-            self.logger.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
-        self.logger.info("Waiting %d s and reconnecting.",waittime)
+            logging.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
+        logging.info("Waiting %d s and reconnecting.",waittime)
         time.sleep(waittime)
         self.reconnection_attempts += 1
         self.last_reconnection_time = time.time()
