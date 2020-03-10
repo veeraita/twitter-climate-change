@@ -26,11 +26,11 @@ def main(args = None):
     MAX_C_TIMEOUTS = 9    # max number of timeouts
     MAX_WAIT_TIME  = 3600 # max wait time
     
-    logging.basicConfig(
-        filename="replyquerier.log",
-        level=logging.DEBUG,
-        format="%(asctime)s:%(levelname)s:%(message)s"
-    )
+    # logging.basicConfig(
+    #     filename="replyquerier.log",
+    #     level=logging.INFO,
+    #     format="%(asctime)s:%(levelname)s:%(message)s"
+    # )
     
     debug_mode = False
 

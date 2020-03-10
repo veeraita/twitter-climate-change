@@ -1,6 +1,13 @@
-import getpass 
+from getpass import getpass
+import sys
+import os
+import base64
 import tweepy
+import logging
 from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class CredentialHandler:
     """
@@ -28,6 +35,7 @@ class CredentialHandler:
         Asks user for encryption key
         """
         credentials = None
+        is_correct  = False
         if not self.__keyfile:
             while not is_correct:
                 try: 
@@ -48,8 +56,8 @@ class CredentialHandler:
                     is_correct, credentials = self.__decrypt(key)
                     logging.debug('Credentials read, calling back to main.')
                 
-            except Exception as error: 
-                logging.error("Something went wrong during key derivation:{}".format(error)) 
+                except Exception as error: 
+                    logging.error("Something went wrong during key derivation:{}".format(error)) 
             
         else:
             f = open(self.__keyfile, mode= "rb")
@@ -57,7 +65,6 @@ class CredentialHandler:
             f.close()
             
             credentials = self.__read_keyfile(keys)
-            break
     
         self.__auth(credentials)
         
@@ -103,8 +110,8 @@ class CredentialHandler:
     def __auth(self, credentials):
         """Authenticate Tweepy API"""
         
-        auth = tweepy.OAuthHandler(self.credentials['consumer_key'], self.credentials['consumer_secret'])
-        auth.set_access_token(self.credentials['access_token'], self.credentials['access_token_secret'])
+        auth = tweepy.OAuthHandler(credentials['consumer_key'], credentials['consumer_secret'])
+        auth.set_access_token(credentials['access_token'], credentials['access_token_secret'])
         # set api to wait and reconnect automatically in case of rate limit error
         try:
             self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
