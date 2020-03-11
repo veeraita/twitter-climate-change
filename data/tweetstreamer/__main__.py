@@ -56,7 +56,7 @@ def main(args = None):
         try:
             # start streaming
             logger.info('Opening a stream.')
-            stream.filter(track = keywords, tweet_mode='extended')
+            stream.filter(track = keywords)
         except Exception as ex:
             waittime = 5
             logger.error('Error: %s',repr(ex))
