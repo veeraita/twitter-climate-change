@@ -7,6 +7,7 @@ dependencies:
   - ca-certificates=2020.1.*
   - certifi=2019.11.*
   - cycler=0.10.*
+  - cryptography
   - decorator=4.4.*
   - expat=2.2.*
   - freetype=2.9.*
