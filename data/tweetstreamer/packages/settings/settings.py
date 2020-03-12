@@ -43,7 +43,7 @@ class Settings():
             with open(self.keywordfile, "r") as f:
                 #sep = ' OR '
                 #ret = sep.join(f.read().split())
-                keywords = list(f.read().split())
+                keywords = list(f.read().splitlines())
                 logging.info("Keywords read successfully.")
                 print("Keywords read in. They are:\n", keywords)
                 return keywords
