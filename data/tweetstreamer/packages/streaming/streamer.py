@@ -62,8 +62,8 @@ class Streamer(tweepy.StreamListener):
                 #create new file
                 pass
 
-        with open(self.jsonfilename, "a", encoding='utf-8') as f:
-            f.write(data.rstrip('\n'))
+        with open(self.jsonfilename, "a", encoding='utf-8', newline='') as f:
+            f.write(data)
             return
 
     def on_error(self, status_code):
