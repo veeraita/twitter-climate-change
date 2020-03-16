@@ -24,7 +24,7 @@ def main(args = None):
     # log_file_handler.setFormatter(formatter)
     # Gets or creates a logger
     logger = logging.getLogger()  
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
     #logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
     # add file handler to logger
@@ -52,11 +52,13 @@ def main(args = None):
     stream = tweepy.Stream(auth=ch.get_auth(), listener=streamer,tweet_mode='extended')
     # read keywords
     keywords = sts.get_keywords()
+
     while True:
         try:
             # start streaming
             logger.info('Opening a stream.')
-            stream.filter(track = keywords)
+            stream.filter(track = keywords, languages=["en"])
+            #stream.sample
         except Exception as ex:
             waittime = 5
             logger.error('Error: %s',repr(ex))

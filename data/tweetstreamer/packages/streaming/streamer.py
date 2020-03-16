@@ -16,7 +16,6 @@ class Streamer(tweepy.StreamListener):
         #self.newfiletime = time0.replace(day=x.day, hour=1, minute=0, second=0, microsecond=0) + timedelta(days=1)
         date_now = datetime.utcnow().strftime("%d/%m/%Y")
         self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M") # Houston 3am = UTC 9am 
-        
         # Gets or creates a logger
         # self.logger = logging.getLogger(__name__) 
         # self.logger.setLevel(logging.INFO) 
@@ -25,7 +24,7 @@ class Streamer(tweepy.StreamListener):
         # self.splittimeperiod = time
         try:
             self.json_dump = json_dump
-            self.jsonfilename = "%s_%s.json"%(self.json_dump.replace(".json",""),str(self.filetime.strftime("%d-%m-%Y")))
+            self.jsonfilename = "{0}_{1}.json".format(self.json_dump.replace(".json",""), str(self.filetime.strftime("%d-%m-%Y")))
 
             with open(self.jsonfilename, 'w+') as f:
                 #create new file
@@ -39,11 +38,11 @@ class Streamer(tweepy.StreamListener):
         except Exception as ex:
             logging.error("Error: %s. Exiting program.",repr(ex))
             exit()
-    
-    def set_new_date():
-        date_now = datetime.utcnow().strftime("&d/%m/%Y")
-        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%m/%j/%y %H:%M")
-        
+
+    def set_new_date(self):
+        date_now = datetime.utcnow().strftime("%d/%m/%Y")
+        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M")
+
     def on_data(self,data):
         """
         Dumps everything to a file in json format
@@ -53,11 +52,11 @@ class Streamer(tweepy.StreamListener):
 
         timenow = datetime.utcnow()
         offset  = timenow - self.filetime
-        if offset.days > 1: #time to create new file
+        if offset.days >= 1: #time to create new file
             self.set_new_date()
 
-            filename = "%s_%s.json"%(self.json_dump.replace(".json",""),str(self.filetime))
-            self.jsonfilename = ''.join(c for c in filename if c in self.valid_chars) #parse out not allowed characters
+            filename = "{0}_{1}.json".format(self.json_dump.replace(".json",''), self.filetime.strftime("%d-%m-%Y"))
+            self.jsonfilename = filename #parse out not allowed characters
             with open(self.jsonfilename, 'w+') as f:
                 #create new file
                 pass
@@ -95,6 +94,7 @@ class Streamer(tweepy.StreamListener):
             # null counter if two hours since last reconnection
             self.reconnection_attempts = 0
             logging.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
+
         logging.info("Waiting %d s and reconnecting.",waittime)
         time.sleep(waittime)
         self.reconnection_attempts += 1
