@@ -12,46 +12,74 @@ class Follower(tweepy.StreamListener):
     Inherits Tweepy's Streamlistener and overwrites some of the
     original methods.
     """
-    def __init__(self, io):
-        # create new json dump file every day at certain hour
+    def __init__(self, io, filter_cities = False):
+        # Create new json dump file every day at certain hour - Houston 3am = UTC 9am
         date_now = datetime.utcnow().strftime("%d/%m/%Y")
-        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M") # Houston 3am = UTC 9am
+        self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M") 
         self.io = io
-        self.reconnection_attempts  = 0 #count reconnection attempts
+        self.reconnection_attempts  = 0
         self.reconnections_limit    = 9
         self.last_reconnection_time = time.time()
+        self._filter_cities         = filter_cities
+        self.filter_words           = ['philadelphia','houston','chicago']
         self._update_file_name()
         super(Follower,self).__init__()
-        #successfull initialization!
         logging.info("Follower {0} initialized successfully.".format(self.io.ID))
 
     def _update_file_name(self):
         without_ft = self.io.json_write_file.replace(".json",'')
         ftime_strf = self.filetime.strftime("%d-%m-%Y")
-        self.jsonfilename = "{0}_{1}.json".format(without_ft, ftime_strf)
-        self.io.instantiate_file(self.jsonfilename)
+        new_filename = "{0}_{1}.json".format(without_ft, ftime_strf)
+        self.io.set_filename(new_filename)
+        self.io.instantiate_file(new_filename)
         
     def _set_new_date(self):
         date_now = datetime.utcnow().strftime("%d/%m/%Y")
         self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M")
 
-    def on_data(self,data):
+    def on_status(self,data):
         """
         Dumps statuses (ignores other update types) to a file in json format
         """
         # reset reconnection attempts
         self.reconnection_attempts = 0
+        timenow   = datetime.utcnow()
+        offset    = timenow - self.filetime
+        save_flag = True
 
-        timenow = datetime.utcnow()
-        offset  = timenow - self.filetime
         if offset.days >= 1: # time to create a new file
             self._set_new_date()
             self._update_file_name()
-        
-        if not self.io.save(data, self.jsonfilename):
-            logging.error("Can't write to file, check available disk space and availability of the file {0}.".format(self.jsonfilename))
+
+        if self._filter_cities:
+            save_flag = self._filter_and_save(data, save_flag)
+
+        if not self.io.save_status(data, self.io.jsonfilename) or not save_flag:
+            logging.error("Can't write to file, check available disk space and availability of the file {0}.".format(self.io.jsonfilename))
             logging.error("Disconnecting..")
             raise
+
+    def _filter_and_save(self,data, save_flag):    
+        try:
+            user_loc = data.user.location.lower()
+        
+            for W in self.filter_words:
+                if W in user_loc:
+                    if not self.io.save_uid(data.user.id_str, W):
+                        save_flag = False
+                        
+                    status_fname = self.io.jsonfilename.replace('.json', '_{0}.json'.format(W))
+                    if not self.io.save_status(data, status_fname):
+                        save_flag = False
+            
+            return save_flag
+        except Exception as ex:
+            return save_flag
+
+    def on_limit(self, track):
+        """Called when a limitation notice arrives"""
+        logging.info('Stream {0} LIMIT notice.'.format(self.io.ID))
+        return
 
     def on_error(self, status_code):
         """
@@ -80,9 +108,11 @@ class Follower(tweepy.StreamListener):
             # null counter if two hours since last reconnection
             self.reconnection_attempts = 0
             logging.info("Over two hours since the last reconnection. Nullified reconnection attempt count.")
+        self._wait(waittime)
+        return True
 
+    def _wait(self, waittime):
         logging.info("Waiting %d s and reconnecting.",waittime)
         time.sleep(waittime)
         self.reconnection_attempts += 1
         self.last_reconnection_time = time.time()
-        return True

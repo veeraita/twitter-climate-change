@@ -1,0 +1,2 @@
+follow,direc,creds_esa.bin,inp/h1.csv,outp/follow1_out.json
+track,filter,creds_ville.bin,inp/kws_sel_290.txt,outp/track1_out.json

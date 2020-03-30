@@ -1,1 +1,1 @@
-from . import credentials, following, settings, io
+from . import credentials, following, settings, io, statsmodule

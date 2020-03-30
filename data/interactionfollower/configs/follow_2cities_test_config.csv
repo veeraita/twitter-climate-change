@@ -1,0 +1,2 @@
+follow,filter,creds_esa.bin,inp/h1.csv,outp/follow1_out.json
+follow,filter,creds_ville.bin,inp/h2.csv,outp/follow2_out.json

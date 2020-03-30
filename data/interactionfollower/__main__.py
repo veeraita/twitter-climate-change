@@ -4,8 +4,9 @@ import time
 import logging
 
 from packages.credentials import CredentialHandler
-from packages.settings import Settings
 from packages.following import Follower
+from packages.settings import Settings
+from packages.statsmodule import StatsModule
 from packages.io import Io
 
 def input_interval():
@@ -14,32 +15,6 @@ def input_interval():
             return int(input('Input desired update interval (minutes) for userids >> '))
         except:
             print('Input not correct, please re-enter.')
-
-def log_stats(ios):
-    # Calculate run time so far
-    m = 60
-    h = m*60 
-    d = h*24
-    tweet_size_mb = 0.0072
-    tweet_size_gb = tweet_size_mb/1000
-    run_time = time.time() - ios[0].stime
-
-    logging.info('\n\nUpdate interval saturated.')
-    logging.info("Running time: {0:.0f} hours {1:.0f} minutes.".format(
-                                                                run_time // h, 
-                                                                (run_time % h) / m))
-    for io in ios:
-        logging.info("IO {0}: (STATS) ==================================".format(io.ID))
-        logging.info("\t\t        Count: {0:>15.0f} tweets".format(io.c_saved))
-        if run_time < d:
-            logging.info("\t\t         Size: {0:>15.3f}     MB".format(tweet_size_mb*io.c_saved))
-        else:
-            logging.info("\t\t         Size: {0:>15.3f}     GB".format(tweet_size_gb*io.c_saved))
-        logging.info("\t\tAvg data rate: {0:>15.0f} tweets / day".format(d*io.c_saved / (run_time)))
-        logging.info("\t\t               {0:>15.0f} tweets / hour".format(h*io.c_saved / run_time))
-        logging.info("\t\t               {0:>15.3f}     GB / day".format((d*io.c_saved*tweet_size_gb) / run_time))
-        logging.info("\t\t               {0:>15.3f}     GB / hour".format((h*io.c_saved*tweet_size_gb) / run_time))
-            
 
 def initialize(sts):
     # initialize required modules
@@ -62,9 +37,10 @@ def initialize(sts):
         logging.info('Authenticating instance {0}...'.format(i))
         ch.authenticate()
 
-    for inp,outp,io in zip(sts.in_fps,sts.out_fps,ios):
+    for cit,inp,outp,io in zip(sts.filter_cities,sts.in_fps,sts.out_fps,ios):
         logging.debug('Initializing StreamListener {0}...'.format(i)) 
-        followers.append(Follower(io))
+        filter_cities = True if cit == 'filter' else False
+        followers.append(Follower(io, filter_cities))
 
     logging.info('Initializing streaming modules...')       
     for i,ch,follower in zip(n_range,chs,followers):
@@ -76,11 +52,11 @@ def initialize(sts):
 
 def main(args = None):
     """
-    InteractionFollower
+    TweetStreamer
 
     Application for storing Twitter streaming data
     """
-    print("AALTO LST InteractionFollower\n")
+    print("AALTO LST TweetStreamer\n")
     if args is None:
         SETTINGS_FILENAME = sys.argv[1] #settings file name
     
@@ -96,6 +72,8 @@ def main(args = None):
     
     # Initialize objects
     streams, ios, chs, followers = initialize(sts)
+    time.sleep(0.2)
+    stats = StatsModule(ios, UPDATE_INTERVAL)
     
     # app logic
     is_connecteds = [False for _ in range(len(streams))]
@@ -104,27 +82,33 @@ def main(args = None):
         try:
             stime = time.time()
 
-            for io,stream,i in zip(ios, streams, range(len(ios))):
+            mode_msg = None
+            for mode,io,stream,i in zip(sts.modes, ios, streams, range(len(ios))):
                 # start following
                 if not is_connecteds[i]:
-                    stream.filter(follow = io.ids, languages=["en"], is_async=True)
-                    logging.info('STREAM {0} successfully connected, number of ids: {1}'.format(io.ID,len(io.ids)))
+                    if mode == 'follow':
+                        stream.filter(follow = io.inputs, languages=["en"], is_async=True)
+                        mode_msg = 'ids followed'
+                    else:
+                        stream.filter(track = io.inputs, languages=["en"], is_async=True)    
+                        mode_msg = 'keywords tracked'
+                    logging.info('STREAM {0} successfully connected, number of {1}: {2}'.format(io.ID,mode_msg,len(io.inputs)))
                     is_connecteds[i] = True
             
             time.sleep(UPDATE_INTERVAL*60-(time.time() - stime))
 
-            log_stats(ios)
+            stats.log_stats()
                 
             logging.info('Checking for new ids...')
             for io,stream,i in zip(ios,streams,range(len(ios))):
-                if io.update():
-                    logging.info('STREAM {0}: New user ids found. Disconnecting the stream.'.format(io.ID))
-                    try:
-                        stream.disconnect()
-                        is_connecteds[i] = False
-                    except Exception as ex:
-                        logging.error('Disconnection failed, exiting.')
-                        exit()
+                if mode == 'follow':
+                    if io.update():
+                        logging.info('STREAM {0}: New user ids found. Disconnecting the stream.'.format(io.ID))
+                        try:
+                            stream.disconnect()
+                            is_connecteds[i] = False
+                        except Exception as ex:
+                            logging.error('Disconnection failed.')
             
             if all(is_connecteds):
                 logging.info('No new ids found.')
