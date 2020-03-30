@@ -60,3 +60,5 @@ dependencies:
     - tweepy==3.8.*
     - urllib3==1.25.*
     - python-louvain
+    - termtables
+    - termplotlib

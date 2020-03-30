@@ -1,0 +1,3 @@
+Note: Stats plotting in interactionfollower is ddependednt on gnuplot library which must be installed on the system (external to conda environment).
+* On debian / ubuntu-based systems you can simply install via apt: sudo apt-get install gnuplot
+* For other systems see: http://www.gnuplot.info/download.html 
