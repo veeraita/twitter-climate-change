@@ -127,7 +127,7 @@ def main(args = None):
             reconnection_attempts = 0
 
             # Log and refresh userids periodically
-            time.sleep(UPDATE_INTERVAL*15-(time.time() - stime))
+            time.sleep(UPDATE_INTERVAL*60-(time.time() - stime))
             stats.log_stats()
             
             logger.info('Checking for new user ids...')
