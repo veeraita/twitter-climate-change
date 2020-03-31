@@ -65,7 +65,7 @@ class Io:
         for at_i in range(3):        
             try: 
                 f = open(jsonfilename, "a", encoding='utf-8', newline='')
-                f.write((str(data._json)))
+                f.write(json.dumps(data._json))
                 f.write('\n')
                 self.c_saved += 1
                 self.daily_c_saved += 1
