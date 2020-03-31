@@ -86,16 +86,16 @@ class Io:
         # If not, then handle as common folder
         else:
             fname = '{0}/{1}.csv'.format(self.filter_output[0], W) 
-             
+
         self.cities[W] += 1
         for _ in range(3):        
             try: 
                 f = open(fname, "a+", encoding='utf-8', newline='')
                 f.write(str(userid))
                 f.write('\n')
-                self.logger.debug('UserID {1} saved to file: {2}'.format(userid, fname))
-                if self.c_saved % 10000: 
-                    self.logger.info('{1} tweets collected.'.format(self.c_saved))
+                self.logger.debug('UserID {0} saved to file: {1}'.format(userid, fname))
+                if self.c_saved % 10000 == 0: 
+                    self.logger.info('{0} tweets collected.'.format(self.c_saved))
                 return True
             except Exception as ex:
                 self.logger.error("Save was unsuccessful:", ex)

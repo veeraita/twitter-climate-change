@@ -54,11 +54,10 @@ def initialize(sts,logger):
     # initialize io modules
     for i,cnfg in zip(n_range, sts.configs):
         logger.debug('Initializing io module {0}...'.format(i))
-        if cnfg['filter_output']:
-            ios.append(Io(i,cnfg['input'],cnfg['output'],cnfg['filter_output']))
-        else:
-            ios.append(Io(i,cnfg['input'],cnfg['output'],cnfg['filter_output']))
-    
+
+        print(cnfg['filter'])
+        filter_flag = isinstance(cnfg['filter'], list)
+        ios.append(Io(i,cnfg['input'],cnfg['output'],cnfg['filter_output'],filter_flag))
     
     # initialize credentialhandlers and decrypt (asks for passphrase)
     logger.info('Reading credentials')
@@ -128,7 +127,7 @@ def main(args = None):
             reconnection_attempts = 0
 
             # Log and refresh userids periodically
-            time.sleep(UPDATE_INTERVAL*60-(time.time() - stime))
+            time.sleep(UPDATE_INTERVAL*15-(time.time() - stime))
             stats.log_stats()
             
             logger.info('Checking for new user ids...')

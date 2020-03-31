@@ -194,7 +194,8 @@ class StatsModule():
                 for L in l_agg: l_base.append(L) 
                 
                 tt.print(np.array(l_base))
-                if io.is_filter: 
+                print("STATSMODULE: IO {0}, is_ filter {1}".format(io.ID, io.is_filter)) 
+                if io.is_filter:
                     self._plot_cities(io)
             else:
                 self.logger.info('No tweets recorded yet.')    

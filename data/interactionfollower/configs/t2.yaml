@@ -1,0 +1,31 @@
+# ===========================================
+## Global parameters
+
+# Update time in minutes  
+update_interval: 1
+logfile: test.log  
+
+# ===========================================
+## Stream configs
+# streams object can include multiple streams
+
+# Set up stream 1
+streams:
+  stream1:
+    mode: track
+    filter: 
+      - philadelphia
+      - chicago
+      - houston
+    filter_output:
+      - cities
+    credentials: creds_ville.bin 
+    input: inp/kws_htest.txt
+    output: outp/kws_htest.json
+  follow1:
+    mode: follow
+    filter:
+    filter_output:
+    credentials: creds_esa.bin 
+    input: cities/houston.csv
+    output: outp/fol_houston.json
