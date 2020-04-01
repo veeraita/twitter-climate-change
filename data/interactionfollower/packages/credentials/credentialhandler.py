@@ -3,7 +3,7 @@ import sys
 import os
 import base64
 import tweepy
-import logging
+import logging.config
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -18,18 +18,14 @@ class CredentialHandler:
     
     def __init__(self, credentialsfile):
         """"""
-        # Gets or creates a logger
-        # self.logger = logging.getLogger(__name__) 
-        # self.logger.setLevel(logging.INFO) 
-        # add file handler to logger
-        # self.logger.addHandler(log_file_handler)
         
+        self.logger = logging.getLogger('CredentialHandler') 
         try:
             self.credentialsfile = credentialsfile
             self.__set_credentials()
         except Exception as ex:
-            logging.error("Error while reading credentials: %s",repr(ex))
-            logging.info("Exiting program.")
+            self.logger.error("Error while reading credentials: %s",repr(ex))
+            self.logger.info("Exiting program.")
             exit()
 
     def __set_credentials(self):
@@ -57,11 +53,11 @@ class CredentialHandler:
                 is_correct, credentials = self.__decrypt(key)
                 if is_correct:
                     self.credentials = credentials
-                    logging.debug('Credentials read, calling back to main.')
+                    self.logger.debug('Credentials read, calling back to main.')
 
                 
             except Exception as error: 
-                logging.error("Something went wrong during key derivation:{}".format(error)) 
+                self.logger.error("Something went wrong during key derivation:{}".format(error)) 
             
     def __decrypt(self, key):
         """
@@ -87,11 +83,11 @@ class CredentialHandler:
             for i in range(0,8,2):
                 credentials[decrypted[i]] = decrypted[i+1]
         except Exception as e:
-            logging.error("Invalid password: {}".format(e))
+            self.logger.error("Invalid password: {}".format(e))
             return False, None
 
-        logging.info('Valid password.') 
-        logging.info("Credentials read successfully.")
+        self.logger.info('Valid password.') 
+        self.logger.info("Credentials read successfully.")
         return True, credentials
 
     def authenticate(self):
@@ -102,9 +98,9 @@ class CredentialHandler:
         # set api to wait and reconnect automatically in case of rate limit error
         try:
             self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-            logging.info("Twitter authentication established successfully.")
+            self.logger.info("Twitter authentication established successfully.")
         except Exception as e:
-            logging.error("Authentication failed: {}".format(e))
+            self.logger.error("Authentication failed: {}".format(e))
 
     def get_auth(self):
         return self.api.auth

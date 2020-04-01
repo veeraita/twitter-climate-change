@@ -2,7 +2,7 @@ import tweepy
 import json
 import sys
 import time
-import logging
+import logging.config
 import os
 from pathlib import Path
 
@@ -10,24 +10,16 @@ class Io:
 
     """
     Io class takes care of the input/output duties (reading and writing to the disk).
-    ...
-
-    Attributes
-    ----------
-    json_read_file : str
-        Path to the json-data file for reading the original tweets.
-    json_write_file : str
-        Path to the json-data file for saving the downloaded replies.
-    queried_path : str
-        Path to the file containing the list of already queried tweet ids.
-    
     """
     
-    def __init__(self, ID, json_read_file, json_write_file):
+    def __init__(self, ID, json_read_file, json_write_file, filter_output, is_filter = False):
         """
         Initialize the object.
         """
         self.ID = ID
+        self.logger          = logging.getLogger("IO {0}".format(self.ID))
+        self.filter_output   = filter_output
+        self.is_filter       = is_filter
         self.json_write_file = json_write_file
         self.json_read_file  = json_read_file
         self.c_saved         = 0
@@ -39,8 +31,8 @@ class Io:
     def _read_csv(self):
         with open(self.json_read_file, "r") as f:
             ids = list(f.read().splitlines())
-            logging.debug("IO {0}: user ids successfully read for the input file {0}. They are:".format(self.ID, self.json_read_file))
-            logging.debug(ids)
+            self.logger.debug("IO {0}: user ids successfully read for the input file {0}. They are:".format(self.ID, self.json_read_file))
+            self.logger.debug(ids)
         return ids
             
     def instantiate_file(self, filepath):
@@ -53,13 +45,13 @@ class Io:
         """
         reads lines from a file and creates a list object
         """
-        logging.info("Reading user_ids.")
+        self.logger.info("Reading user_ids.")
         try:
             self.inputs = list(set(self._read_csv()))
             return self.inputs
         except Exception as ex:
-            logging.error("Error while reading user_ids: %s",repr(ex))
-            logging.info("Exiting program.")
+            self.logger.error("Error while reading user_ids: %s",repr(ex))
+            self.logger.info("Exiting program.")
             exit()
 
     def update(self):
@@ -73,37 +65,47 @@ class Io:
         for at_i in range(3):        
             try: 
                 f = open(jsonfilename, "a", encoding='utf-8', newline='')
-                f.write((str(data._json)))
+                f.write(json.dumps(data._json))
                 f.write('\n')
                 self.c_saved += 1
                 self.daily_c_saved += 1
-                logging.debug('Tweet saved, total count: {}'.format(self.c_saved))
+                self.logger.debug('Tweet saved, total count: {}'.format(self.c_saved))
                 return True
             except Exception as ex:
-                logging.error("Save was unsuccessful:", ex)
+                self.logger.error("Save was unsuccessful:", ex)
                 time.sleep(0.5)
         return False
 
     def save_uid(self, userid, W):
-        fname = '{0}.csv'.format(W)
-        if W not in self.cities.keys:
-            self.cities[W] = 1
+        # If separate filenames, then name accordingly
+        fname = None
+        if len(self.filter_output) == len(self.cities.keys()):
+            for f,k in zip(filter_output, self.cities.keys()):
+                if k == W:
+                    fname = f
+        # If not, then handle as common folder
         else:
-            self.cities[W] += 1
-            
-        for at_i in range(3):        
+            fname = '{0}/{1}.csv'.format(self.filter_output[0], W) 
+
+        self.cities[W] += 1
+        for _ in range(3):        
             try: 
-                f = open(fname, "a", encoding='utf-8', newline='')
-                f.write(userid)
+                f = open(fname, "a+", encoding='utf-8', newline='')
+                f.write(str(userid))
                 f.write('\n')
-                logging.info('UserID {0} saved to file: {1}'.format(userid, fname))
+                self.logger.debug('UserID {0} saved to file: {1}'.format(userid, fname))
+                if self.c_saved % 10000 == 0: 
+                    self.logger.info('{0} tweets collected.'.format(self.c_saved))
                 return True
             except Exception as ex:
-                logging.error("Save was unsuccessful:", ex)
+                self.logger.error("Save was unsuccessful:", ex)
                 time.sleep(0.5)
         return False
-
+            
     def set_filename(self, filename):
         self.jsonfilename = filename
 
+    def initialize_city_counts(self, cities):
+        for city in cities:
+            self.cities[city] = 0
         
