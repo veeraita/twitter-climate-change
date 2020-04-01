@@ -57,7 +57,7 @@ class StatsModule():
         last_filesizes = self.curr_filesizes
         self.curr_filesizes = self._get_filesizes()
         if last_filesizes[0] > self.curr_filesizes[0]:
-            self.daily_extvals = self.__init_extvalues([dict() for _ in range(len(ios))], 
+            self.daily_extvals = self.__init_extvalues([dict() for _ in range(len(self.ios))], 
                                                        ['tweets_gained','size_gained_mb']) 
             self.last_filesizes = [0 for _ in range(len(self.ios))]
         else:
@@ -156,12 +156,12 @@ class StatsModule():
                                                                             io.daily_c_saved,
                                                                             iter_stats['total_size_gb'] * 1024)
                 else:
-                    daily = "\nDAILY {0:>12,.0f} tweets / {0:<7.1f} GB".format(
+                    daily = "\nDAILY {0:>12,.0f} tweets / {1:<7.1f} GB".format(
                                                                             io.daily_c_saved,
                                                                             iter_stats['total_size_gb'])
 
 
-                daily += "   |   Min / Max daily (all time):      {0:,.0f} / {1:,.0f} ".format(
+                daily += "  |  Min / Max daily iter (all time):      {0:,.0f} / {1:,.0f} ".format(
                                                                     min(self.daily_extvals[i]['tweets_gained']),
                                                                     max(self.daily_extvals[i]['tweets_gained']))
                                                                         
