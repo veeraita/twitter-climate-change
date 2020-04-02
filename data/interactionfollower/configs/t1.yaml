@@ -14,11 +14,14 @@ streams:
   stream1:
     mode: track
     filter: 
-      - philadelphia
-      - chicago
-      - houston
+      - [philadelphia,philly]
+      - [chicago]
+      - [houston,h-town,bayou]
+      - [new york,big apple]
+      - [miami]
+      - [toronto,big-t]
     filter_output:
       - cities
-    credentials: creds_ville.bin 
+    credentials: creds_nuutti.bin 
     input: inp/kws_htest.txt
     output: outp/kws_htest.json

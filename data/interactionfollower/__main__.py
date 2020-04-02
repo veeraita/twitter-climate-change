@@ -55,7 +55,6 @@ def initialize(sts,logger):
     for i,cnfg in zip(n_range, sts.configs):
         logger.debug('Initializing io module {0}...'.format(i))
 
-        print(cnfg['filter'])
         filter_flag = isinstance(cnfg['filter'], list)
         ios.append(Io(i,cnfg['input'],cnfg['output'],cnfg['filter_output'],filter_flag))
     

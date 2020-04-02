@@ -41,8 +41,9 @@ class Settings():
                 ssts['filter'] = False
                 ssts['filter_output'] = None 
             else:
-                for w in stream_i['filter']: 
-                    assert isinstance(w, str) and (len(w) > 3)
+                for names in stream_i['filter']:
+                    for w in names:
+                        assert isinstance(w, str) and (len(w) > 3)
                 for w in stream_i['filter_output']: 
                     assert isinstance(w, str) and (len(w) > 3)
 

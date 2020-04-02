@@ -22,8 +22,8 @@ class Follower(tweepy.StreamListener):
         self.reconnections_limit    = 9
         self.last_reconnection_time = time.time()
         if self.io.is_filter:
-            self._filter_cities     = filter_cities
-            self.io.initialize_city_counts(filter_cities)
+            self._filter_cities = filter_cities
+            self.io.initialize_city_counts([names[0] for names in filter_cities])
         self._update_file_name()
         super(Follower,self).__init__()
         self.logger.info("Follower {0} initialized successfully.".format(self.io.ID))
@@ -53,29 +53,25 @@ class Follower(tweepy.StreamListener):
             self._set_new_date()
             self._update_file_name()
 
-        if self.io.is_filter:
-            save_flag = self._filter_and_save(data, save_flag)
-
-        if not self.io.save_status(data, self.io.jsonfilename) or not save_flag:
+        try:
+            if self.io.is_filter and data.user.location is not None:
+                self._filter_and_save(data, save_flag)
+            self.io.save_status(data, self.io.jsonfilename)
+        except Exception as ex:
+            self.logger.error('ERROR:', repr(ex))
             self.logger.error("Can't write to file, check available disk space and availability of the file {0}.".format(self.io.jsonfilename))
             self.logger.error("Disconnecting..")
             raise
-
-    def _filter_and_save(self,data, save_flag):    
-        try:
-            user_loc = data.user.location.lower()
-            for W in self._filter_cities:
+                
+    def _filter_and_save(self,data,save_flag):        
+        user_loc = data.user.location.lower()
+        for names in self._filter_cities:
+            for W in names:
                 if W in user_loc:
-                    if not self.io.save_uid(data.user.id_str, W):
-                        save_flag = False
-                        
-                    status_fname = self.io.jsonfilename.replace('.json', '_{0}.json'.format(W))
-                    if not self.io.save_status(data, status_fname):
-                        save_flag = False
-            
-            return save_flag
-        except Exception as ex:
-            return save_flag
+                    self.logger.debug('Found match for: {W} with userloc {user_loc}, saving.')
+                    self.io.save_uid(data.user.id_str, names[0])
+                    status_fname = self.io.jsonfilename.replace('.json', '_{0}.json'.format(names[0]))
+                    self.io.save_status(data, status_fname)     
 
     def on_limit(self, track):
         """Called when a limitation notice arrives"""

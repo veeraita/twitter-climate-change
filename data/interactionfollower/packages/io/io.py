@@ -31,7 +31,7 @@ class Io:
     def _read_csv(self):
         with open(self.json_read_file, "r") as f:
             ids = list(f.read().splitlines())
-            self.logger.debug("IO {0}: user ids successfully read for the input file {0}. They are:".format(self.ID, self.json_read_file))
+            self.logger.debug("IO {0}: input file  {1} successfully read. Following keywords / userids initialized:".format(self.ID, self.json_read_file))
             self.logger.debug(ids)
         return ids
             
@@ -76,18 +76,18 @@ class Io:
                 time.sleep(0.5)
         return False
 
-    def save_uid(self, userid, W):
+    def save_uid(self, userid, name):
         # If separate filenames, then name accordingly
         fname = None
         if len(self.filter_output) == len(self.cities.keys()):
             for f,k in zip(filter_output, self.cities.keys()):
-                if k == W:
+                if k == name:
                     fname = f
         # If not, then handle as common folder
         else:
-            fname = '{0}/{1}.csv'.format(self.filter_output[0], W) 
+            fname = '{0}/{1}.csv'.format(self.filter_output[0], name) 
 
-        self.cities[W] += 1
+        self.cities[name] += 1 
         for _ in range(3):        
             try: 
                 f = open(fname, "a+", encoding='utf-8', newline='')
