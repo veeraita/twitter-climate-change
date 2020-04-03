@@ -27,9 +27,9 @@ class StatsModule():
         self.__init_extvalues(self.extvals, extval_keys)
         self.__init_extvalues(self.daily_extvals, extval_keys)
         self.curr_filesizes  = self._get_filesizes()
+        self.last_filesizes  = self.curr_filesizes
         self.run_data_gb     = [s / 1024**3 for s in self.curr_filesizes]
         self.last_cs         = [0  for _ in range(len(self.ios))]
-        self.last_filesizes  = None
         self.iter_sizes_mb   = [[] for _ in range(len(self.ios))]
         self.iter_tweets     = [[] for _ in range(len(self.ios))]
         self.logger.info("StatsModule initialized successfully.")
@@ -46,6 +46,7 @@ class StatsModule():
                 filesize = os.path.getsize(io.jsonfilename)
                 filesizes.append(filesize)
                 self.logger.debug('Filesize read, {0} : {1}'.format(io.jsonfilename, filesize))
+            
             return filesizes
         except Exception as ex:
             self.logger.error("Error while updating filesizes in StatsModule: %s",repr(ex))
