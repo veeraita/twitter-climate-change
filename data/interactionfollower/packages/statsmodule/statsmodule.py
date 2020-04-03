@@ -48,7 +48,7 @@ class StatsModule():
                 self.logger.debug('Filesize read, {0} : {1}'.format(io.jsonfilename, filesize))
             return filesizes
         except Exception as ex:
-            self.logger.error("Error while initializing StatsModule: %s",repr(ex))
+            self.logger.error("Error while updating filesizes in StatsModule: %s",repr(ex))
             self.logger.info("Exiting program.")
             exit()
 
@@ -57,8 +57,8 @@ class StatsModule():
         last_filesizes = self.curr_filesizes
         self.curr_filesizes = self._get_filesizes()
         if last_filesizes[0] > self.curr_filesizes[0]:
-            self.daily_extvals = self.__init_extvalues([dict() for _ in range(len(self.ios))], 
-                                                       ['tweets_gained','size_gained_mb']) 
+            self.daily_extvals = [dict() for _ in range(len(self.ios))]
+            self.__init_extvalues(self.daily_extvals, ['tweets_gained','size_gained_mb']) 
             self.last_filesizes = [0 for _ in range(len(self.ios))]
         else:
             self.last_filesizes = last_filesizes
@@ -174,9 +174,7 @@ class StatsModule():
                 daily += " ( {0:,.1f} / {1:,.1f} ) MB".format(min(self.extvals[i]['size_gained_mb']),
                                                                     max(self.extvals[i]['size_gained_mb']))
 
-                print(daily)
-                                                                                        
-                
+                print(daily)                                                      
                 print("ITERATION: {0}".format(len(self.iter_sizes_mb[i])))
                 l_base = self._format_base_stats(iter_stats, io, is_seq)
                 l_base.append([27*"=" for L in range(len(l_base[0]))])
