@@ -30,6 +30,7 @@ class StatsModule():
         self.last_filesizes  = self.curr_filesizes
         self.run_data_gb     = [s / 1024**3 for s in self.curr_filesizes]
         self.last_cs         = [0  for _ in range(len(self.ios))]
+        self.last_daily_cs   = [0  for _ in range(len(self.ios))]
         self.iter_sizes_mb   = [[] for _ in range(len(self.ios))]
         self.iter_tweets     = [[] for _ in range(len(self.ios))]
         self.logger.info("StatsModule initialized successfully.")
@@ -71,7 +72,10 @@ class StatsModule():
         iter_stats['avg_daily_tweet_size_mb'] = ( curr / 1024**2 ) / io.daily_c_saved        
         # Iteration stats
         iter_stats['size_gained_mb'] = (curr - last) / (1024**2)
-        iter_stats['tweets_gained'] = io.daily_c_saved - self.last_cs[i] if self.last_cs[i] <= io.daily_c_saved else io.daily_c_saved 
+        if self.last_daily_cs[i] <= io.daily_c_saved:
+            iter_stats['tweets_gained'] = io.daily_c_saved - self.last_daily_cs[i] 
+        else: 
+            iter_stats['tweets_gained'] = io.daily_c_saved
         
         for extval in ['tweets_gained','size_gained_mb']:
             self.extvals[i][extval].append(iter_stats[extval])
@@ -79,7 +83,9 @@ class StatsModule():
 
         self.run_data_gb[i] += (iter_stats['size_gained_mb'] / 1024)
         iter_stats['avg_tweet_size_mb'] = ( self.run_data_gb[i] * 1024 ) / io.c_saved  
+        
         self.last_cs[i] = io.c_saved
+        self.last_daily_cs[i] = io.daily_c_saved
         
         self.iter_sizes_mb[i].append(iter_stats['size_gained_mb'])
         self.iter_tweets[i].append(iter_stats['tweets_gained'])

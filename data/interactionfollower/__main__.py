@@ -149,7 +149,7 @@ def main(args = None):
             for stream,io,i in zip(streams,ios,range(len(streams))):
                 stream.disconnect()
                 is_connecteds[i] = False
-                logger.error('STREAM {0} disconnected due to error.')
+                logger.error('STREAM {0} disconnected due to error.'.format(io.ID))
             reconnection_attempts += 1
             waittime = min(2**reconnection_attempts,3600) # Max waiting time = 1 hour
             logger.info("Waiting %d seconds before attempting to open streams again",waittime)

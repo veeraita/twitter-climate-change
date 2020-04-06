@@ -34,7 +34,7 @@ class Follower(tweepy.StreamListener):
         new_filename = "{0}_{1}.json".format(without_ft, ftime_strf)
         self.io.set_filename(new_filename)
         self.io.instantiate_file(new_filename)
-        
+
     def _set_new_date(self):
         date_now = datetime.utcnow().strftime("%d/%m/%Y")
         self.filetime = datetime.strptime("{} 09:00".format(date_now), "%d/%m/%Y %H:%M")
@@ -62,16 +62,16 @@ class Follower(tweepy.StreamListener):
             self.logger.error("Can't write to file, check available disk space and availability of the file {0}.".format(self.io.jsonfilename))
             self.logger.error("Disconnecting..")
             raise
-                
-    def _filter_and_save(self,data,save_flag):        
+
+    def _filter_and_save(self,data,save_flag):
         user_loc = data.user.location.lower()
         for names in self._filter_cities:
             for W in names:
                 if W in user_loc:
-                    self.logger.debug('Found match for: {W} with userloc {user_loc}, saving.')
+                    self.logger.debug('Found match for: {0} with userloc {1}, saving.'.format(W, user_loc))
                     self.io.save_uid(data.user.id_str, names[0])
                     status_fname = self.io.jsonfilename.replace('.json', '_{0}.json'.format(names[0]))
-                    self.io.save_status(data, status_fname)     
+                    self.io.save_status(data, status_fname)
 
     def on_limit(self, track):
         """Called when a limitation notice arrives"""
