@@ -2,7 +2,7 @@ import sys
 import tweepy
 import time
 import logging.config
-
+import random
 from packages.credentials import CredentialHandler
 from packages.following import Follower
 from packages.settings import Settings
@@ -116,6 +116,7 @@ def main(args = None):
                 # start following
                 if not is_connecteds[i]:
                     if cnfg['mode'] == 'follow':
+                        time.sleep(random.uniform(0.1, 1.5))
                         stream.filter(follow = io.inputs, languages=["en"], is_async=True)
                         mode_msg = 'ids followed'
                     else:
@@ -157,5 +158,4 @@ def main(args = None):
 
 # run application
 if __name__ == "__main__":
-    # define file handler and set formatter
     main()
