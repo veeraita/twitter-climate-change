@@ -97,7 +97,7 @@ class CredentialHandler:
         auth.set_access_token(self.credentials['access_token'], self.credentials['access_token_secret'])
         # set api to wait and reconnect automatically in case of rate limit error
         try:
-            self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+            self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, retry_count=0)
             self.logger.info("Twitter authentication established successfully.")
         except Exception as e:
             self.logger.error("Authentication failed: {}".format(e))

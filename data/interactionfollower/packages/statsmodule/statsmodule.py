@@ -6,6 +6,7 @@ import time
 import os
 import numpy as np
 from datetime import datetime as dt
+from ..exceptions import StreamOfflineException
 
 def div(n, d):
     # Avoid Division by Zero
@@ -76,6 +77,10 @@ class StatsModule():
             iter_stats['tweets_gained'] = io.daily_c_saved - self.last_daily_cs[i] 
         else: 
             iter_stats['tweets_gained'] = io.daily_c_saved
+        
+        if iter_stats['tweets_gained'] == 0:
+            raise StreamOfflineException(
+                'No data has been recorded in this iteration implying that Stream {0} has been disconnected.'.format(io.ID))
         
         for extval in ['tweets_gained','size_gained_mb']:
             self.extvals[i][extval].append(iter_stats[extval])
@@ -284,4 +289,6 @@ class StatsModule():
                         "{0:>22,.1f} GB".format(srate_s/1024*w)
         ])
         return stats_agg
-            
+    
+    def change_ios(self, ios):
+        self.ios = ios
