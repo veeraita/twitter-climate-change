@@ -12,6 +12,7 @@ dependencies:
   - expat=2.2.*
   - freetype=2.9.*
   - icu=58.*
+  - imbalanced-learn=0.6.*
   - intel-openmp=2020.*
   - joblib=0.14.*
   - jpeg=9.*
