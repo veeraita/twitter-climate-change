@@ -1,0 +1,20 @@
+# ===========================================
+## Global parameters
+
+# Update time in minutes  
+update_interval: 1
+logfile: test.log  
+
+# ===========================================
+## Stream configs
+# streams object can include multiple streams
+
+# Set up stream 1
+streams:
+  stream1:
+    mode: follow
+    filter: False
+    filter_output:
+    credentials: /home/portae1/creds_esa.bin
+    input: cities/philadelphia.csv    
+    output: outp/kws_htest_follow.json

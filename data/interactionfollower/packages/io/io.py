@@ -12,11 +12,12 @@ class Io:
     Io class takes care of the input/output duties (reading and writing to the disk).
     """
     
-    def __init__(self, ID, json_read_file, json_write_file, filter_output, is_filter = False):
+    def __init__(self, ID, name, json_read_file, json_write_file, filter_output, is_filter = False):
         """
         Initialize the object.
         """
-        self.ID = ID
+        self.ID              = ID
+        self.name            = name
         self.logger          = logging.getLogger("IO {0}".format(self.ID))
         self.filter_output   = filter_output
         self.is_filter       = is_filter

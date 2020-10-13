@@ -33,7 +33,8 @@ class Settings():
             len_msg  =  "Filename not of correct format, need to be string" 
             len_msg += " with length of more than 3 characters." 
             ssts     = {}                
-            
+            assert isinstance(stream_i['name'], str) and len(stream_i['name']) > 2 
+            ssts['name'] = stream_i['name']
             assert (stream_i['mode'] == 'follow') or (stream_i['mode'] == 'track')
             ssts['mode'] = stream_i['mode']
             

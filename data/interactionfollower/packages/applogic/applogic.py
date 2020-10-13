@@ -32,7 +32,7 @@ class AppLogic:
             logger.debug('Initializing io module {0}...'.format(i))
 
             filter_flag = isinstance(cnfg['filter'], list)
-            self.ios.append(Io(i,cnfg['input'],cnfg['output'],cnfg['filter_output'],filter_flag))
+            self.ios.append(Io(i,cnfg['name'],cnfg['input'],cnfg['output'],cnfg['filter_output'],filter_flag))
         
         # initialize credentialhandlers and decrypt (asks for passphrase)      
         for i,ch in zip(n_range, self.chs):

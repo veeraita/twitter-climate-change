@@ -1,0 +1,5 @@
+CREDENTIALS_PATH /home/saarinv11/creds_ville.bin  
+TIME_TRESHOLD 0
+JSON_READ_PATH /home/data_collection/content-based/kws_final_30-03-2020.json
+JSON_WRITE_PATH /home/data_collection/network-based/rexpanded/kws_final_exp_30-03-2020.json
+QUERIED_SET_PATH queried_set.txt

@@ -1,0 +1,27 @@
+# ===========================================
+## Global parameters
+
+# Update time in minutes  
+update_interval: 10
+logfile: /home/data_collection/data_logs/keyword-streaming.log  
+
+# ===========================================
+## Stream configs
+# streams object can include multiple streams
+
+# Set up stream 1
+streams:
+  stream1:
+    name: 'Keyword streaming'
+    mode: track
+    filter: 
+      - [philadelphia,philly]
+      - [chicago]
+      - [houston,h-town]
+      - [miami]
+      - [phoenix]
+    filter_output:
+      - /home/data_collection/network-based/cities_userids
+    credentials: /home/saarinv11/creds_ville.bin 
+    input: inp/kws_final_31_03.txt
+    output: /home/data_collection/content-based/current_running/kws_final.json

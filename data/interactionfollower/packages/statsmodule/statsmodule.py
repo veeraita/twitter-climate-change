@@ -125,7 +125,7 @@ class StatsModule():
         y = self.iter_tweets[i]
 
         fig = tpl.figure()
-        fig.plot(x, y, label="Stream {0} volume".format(i+1), width=150, height=12)
+        fig.plot(x, y, label="Stream {0} ({1}) volume".format(i+1, self.ios[i].name), width=150, height=12)
         fig.show()
 
     def _plot_cities(self, io):
@@ -162,7 +162,7 @@ class StatsModule():
                 iter_stats = self._calculate_iter_stats(i,io,curr,last,is_seq)
                 
                 self.logger.info("\n"+120*'=')
-                print("\n// IO {0}: (STATS) ".format(io.ID))
+                print("\n// IO: {0} | NAME: {1} (STATS) ".format(io.ID, io.name))
                 if iter_stats['total_size_gb'] < 1.0:
                     daily = "\nDAILY {0:>12,.0f} tweets / {1:<7.1f} MB ".format(
                                                                             io.daily_c_saved,
@@ -214,6 +214,7 @@ class StatsModule():
             print("\nVolume of tweets as a function of time (minutes):")
             for i,_ in enumerate(self.ios):
                 self._plot_volume(i)
+        print('')
         
     def _format_base_stats(self, iter_stats, io, is_seq):
         stats_base = []

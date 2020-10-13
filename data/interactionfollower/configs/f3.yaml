@@ -1,0 +1,38 @@
+# ===========================================
+## Global parameters
+
+# Update time in minutes  
+update_interval: 10
+logfile: /home/data_collection/data_logs/follow-streaming.log  
+
+# ===========================================
+## Stream configs
+# streams object can include multiple streams
+
+# Set up stream 1
+streams:
+  stream1:
+    name: 'Chicago'
+    mode: follow
+    filter: False
+    filter_output:
+    credentials: /home/italinv1/creds_veera.bin
+    input: /home/data_collection/network-based/cities_userids/top5000_15_04/chicago_top5000.csv    
+    output: /home/data_collection/network-based/current_running/follow_chicago.json
+  stream2:
+    name: 'Houston'
+    mode: follow
+    filter: False
+    filter_output:
+    credentials: /home/portae1/creds_esa.bin
+    input: /home/data_collection/network-based/cities_userids/top5000_15_04/houston_top5000.csv
+    output: /home/data_collection/network-based/current_running/follow_houston.json
+  stream3:
+    name: 'Miami'
+    mode: follow
+    filter: False
+    filt3r_output:
+    credentials: /home/stenn1/creds_nuutti.bin
+    input: /home/data_collection/network-based/cities_userids/top5000_15_04/miami_top5000.csv
+    output: /home/data_collection/network-based/current_running/follow_miami.json
+  

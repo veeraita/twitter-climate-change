@@ -87,6 +87,7 @@ def main(args = None):
         try:
             # run the app logic
             logic.run(logger,stats)
+
         except Exception as ex:
             #  Executes "hard" restart of the logic in case exception
             #  escapes from the AppLogic module, keeps statistics as is
